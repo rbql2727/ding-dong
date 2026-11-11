@@ -1,5 +1,6 @@
 import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode, TextareaHTMLAttributes } from 'react'
 import { BackIcon } from './icons'
+import { MediaImg } from './MediaImg'
 
 /** 여러 화면에서 같이 쓰는 기본 UI 조각들 */
 
@@ -111,7 +112,7 @@ export function EmptyState({ icon, title, description }: { icon: ReactNode; titl
 /** 프로필 사진 (없으면 닉네임 첫 글자) */
 export function Avatar({ url, name, className = 'size-10 text-base' }: { url?: string | null; name?: string; className?: string }) {
   if (url) {
-    return <img src={url} alt="" loading="lazy" className={`shrink-0 rounded-full bg-gray-100 object-cover ${className}`} />
+    return <MediaImg src={url} alt="" loading="lazy" className={`shrink-0 rounded-full bg-gray-100 object-cover ${className}`} />
   }
   return (
     <span

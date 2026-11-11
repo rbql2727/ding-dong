@@ -30,7 +30,8 @@ export const mediaPaths = {
 
 /**
  * media 버킷에 파일 올리기.
- * @returns 공개 URL
+ * @returns 공개 URL 형식의 주소. DB 에는 이 주소를 "파일 이름표"로 저장합니다.
+ *   버킷이 비공개라 이 주소로 직접 열리지는 않고, 화면에서는 MediaImg 가 서명 주소로 바꿔 보여 줍니다.
  */
 export async function uploadMedia(path: string, file: Blob): Promise<string> {
   const { error } = await supabase.storage.from(MEDIA_BUCKET).upload(path, file, {

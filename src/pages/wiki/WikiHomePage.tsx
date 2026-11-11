@@ -3,17 +3,26 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../../auth/AuthContext'
 import { listCharacters, type CharacterCard } from '../../data/characters'
 import { createRoom, deleteRoom, listRooms, renameRoom, saveRoomOrder } from '../../data/rooms'
+import { countPendingRequests, getWikiPreview } from '../../data/sharing'
 import { getWiki } from '../../data/wikis'
 import { ActionSheet, ConfirmModal, PromptModal } from '../../components/Modal'
 import { BackIcon, GearIcon, MoreIcon, PlusIcon, UserIcon } from '../../components/icons'
 import { ErrorScreen, IconButton, InlineLoading } from '../../components/ui'
 import { themeStyle } from '../../lib/theme'
-import type { Room } from '../../lib/types'
+import type { Room, Visibility, WikiPreview } from '../../lib/types'
+import { visibilityLabel } from '../../lib/visibility'
 import { useLoad } from '../../lib/useLoad'
+import { MediaImg } from '../../components/MediaImg'
+import { LockedWikiView } from './LockedWikiView'
 
-async function loadWikiHome(wikiId: string) {
-  const [wiki, rooms, characters] = await Promise.all([getWiki(wikiId), listRooms(wikiId), listCharacters(wikiId)])
-  return { wiki, rooms, characters }
+async function loadWikiHome(wikiId: string, isOwner: boolean) {
+  const [wiki, rooms, characters, pendingCount] = await Promise.all([
+    getWiki(wikiId),
+    listRooms(wikiId),
+    listCharacters(wikiId),
+    isOwner ? countPendingRequests(wikiId) : Promise.resolve(0),
+  ])
+  return { wiki, rooms, characters, pendingCount }
 }
 
 type RoomDialog =
@@ -23,11 +32,40 @@ type RoomDialog =
   | { type: 'delete'; room: Room }
   | null
 
+/**
+ * 위키 홈 (/w/:wikiId)
+ * 먼저 "겉모습(미리보기)"만 물어보고, 볼 권한이 있으면 내용을, 없으면 잠긴 화면(열람 요청)을 보여 줌.
+ */
 export function WikiHomePage() {
   const { wikiId = '' } = useParams()
+  const navigate = useNavigate()
+  const { data: preview, loading, error, reload } = useLoad(() => getWikiPreview(wikiId), [wikiId])
+
+  if (loading) return <InlineLoading />
+  if (error || !preview) {
+    return (
+      <>
+        <TopBar onBack={() => navigate(-1)} />
+        <ErrorScreen
+          message={error ?? '위키를 찾을 수 없어요. 비공개이거나, 링크로만 볼 수 있는 위키예요.'}
+          onRetry={error ? reload : undefined}
+        />
+      </>
+    )
+  }
+  if (!preview.can_view) return <LockedWikiView preview={preview} onChanged={reload} />
+  return <WikiContent wikiId={wikiId} preview={preview} />
+}
+
+function WikiContent({ wikiId, preview }: { wikiId: string; preview: WikiPreview }) {
   const { user } = useAuth()
   const navigate = useNavigate()
-  const { data, loading, error, reload, setData } = useLoad(() => loadWikiHome(wikiId), [wikiId])
+  const isOwnerByPreview = preview.owner_id === user?.id
+  const { data, loading, error, reload, setData } = useLoad(
+    () => loadWikiHome(wikiId, isOwnerByPreview),
+    [wikiId, isOwnerByPreview],
+  )
+  const backTo = isOwnerByPreview ? '/wikis' : '/explore'
   const [dialog, setDialog] = useState<RoomDialog>(null)
   const [orderError, setOrderError] = useState('')
 
@@ -35,13 +73,13 @@ export function WikiHomePage() {
   if (error || !data) {
     return (
       <>
-        <TopBar onBack={() => navigate('/wikis')} />
+        <TopBar onBack={() => navigate(backTo)} />
         <ErrorScreen message={error ?? '위키를 찾을 수 없어요.'} onRetry={reload} />
       </>
     )
   }
 
-  const { wiki, rooms, characters } = data
+  const { wiki, rooms, characters, pendingCount } = data
   const isOwner = wiki.owner_id === user?.id
   const unassigned = characters.filter((c) => !c.room_id || !rooms.some((r) => r.id === c.room_id))
 
@@ -67,12 +105,12 @@ export function WikiHomePage() {
       {/* 표지 + 제목 */}
       <section className="relative">
         <div className="relative h-44 bg-(--wiki)">
-          {wiki.cover_url && <img src={wiki.cover_url} alt="" decoding="async" className="size-full object-cover" />}
+          {wiki.cover_url && <MediaImg src={wiki.cover_url} alt="" decoding="async" className="size-full object-cover" />}
           <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/10" />
         </div>
         <TopBar
           overlay
-          onBack={() => navigate('/wikis')}
+          onBack={() => navigate(backTo)}
           right={
             isOwner && (
               <IconButton label="위키 설정" onClick={() => navigate(`/w/${wiki.id}/settings`)} className="text-white active:bg-white/20">
@@ -84,7 +122,27 @@ export function WikiHomePage() {
         <div className="px-4 pt-4">
           <h1 className="text-2xl font-bold break-words text-gray-900">{wiki.name}</h1>
           {wiki.description && <p className="mt-2 text-sm leading-relaxed whitespace-pre-wrap text-gray-600">{wiki.description}</p>}
-          <p className="mt-2 text-xs text-gray-400">캐릭터 {characters.length}명 · 방 {rooms.length}개</p>
+          <p className="mt-2 text-xs text-gray-400">
+            {!isOwner && <>{preview.owner_nickname} · </>}캐릭터 {characters.length}명 · 방 {rooms.length}개
+          </p>
+          {isOwner && (
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Link
+                to={`/w/${wiki.id}/settings`}
+                className="rounded-full border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 active:bg-gray-50"
+              >
+                공개 범위: {visibilityLabel(wiki.visibility)}
+              </Link>
+              {(wiki.visibility === 'approved' || pendingCount > 0) && (
+                <Link
+                  to={`/w/${wiki.id}/access`}
+                  className="rounded-full bg-(--wiki) px-3 py-1.5 text-xs font-semibold text-white active:brightness-95"
+                >
+                  열람 승인 관리{pendingCount > 0 && ` · 대기 ${pendingCount}`}
+                </Link>
+              )}
+            </div>
+          )}
         </div>
       </section>
 
@@ -100,6 +158,7 @@ export function WikiHomePage() {
             roomId={room.id}
             characters={characters.filter((c) => c.room_id === room.id)}
             isOwner={isOwner}
+            wikiVisibility={wiki.visibility}
             onMenu={isOwner ? () => setDialog({ type: 'menu', room }) : undefined}
           />
         ))}
@@ -111,6 +170,7 @@ export function WikiHomePage() {
             roomId={null}
             characters={unassigned}
             isOwner={isOwner}
+            wikiVisibility={wiki.visibility}
           />
         )}
       </div>
@@ -212,6 +272,7 @@ function RoomSection({
   characters,
   isOwner,
   onMenu,
+  wikiVisibility,
 }: {
   title: string
   wikiId: string
@@ -219,6 +280,7 @@ function RoomSection({
   characters: CharacterCard[]
   isOwner: boolean
   onMenu?: () => void
+  wikiVisibility: Visibility
 }) {
   const newLink = `/w/${wikiId}/c/new${roomId ? `?room=${roomId}` : ''}`
   return (
@@ -241,9 +303,15 @@ function RoomSection({
           {characters.map((c) => (
             <li key={c.id}>
               <Link to={`/w/${wikiId}/c/${c.id}`} className="block active:opacity-80">
-                <div className="aspect-[3/4] overflow-hidden rounded-xl bg-gray-100">
+                <div className="relative aspect-[3/4] overflow-hidden rounded-xl bg-gray-100">
+                  {/* 주인에게만: 위키와 다른 공개 범위인 캐릭터 표시 */}
+                  {isOwner && c.visibility !== wikiVisibility && (
+                    <span className="absolute top-1.5 left-1.5 z-[1] rounded-full bg-black/60 px-2 py-0.5 text-[11px] font-medium text-white">
+                      {visibilityLabel(c.visibility)}
+                    </span>
+                  )}
                   {c.thumbUrl ? (
-                    <img src={c.thumbUrl} alt="" loading="lazy" decoding="async" className="size-full object-cover" />
+                    <MediaImg src={c.thumbUrl} alt="" loading="lazy" decoding="async" className="size-full object-cover" />
                   ) : (
                     <div className="flex size-full items-center justify-center text-gray-300">
                       <UserIcon className="size-12" />

@@ -33,6 +33,7 @@ export type Character = {
   name: string
   tagline: string
   cover_image_id: string | null
+  visibility: Visibility
   sort_order: number
   created_at: string
 }
@@ -60,4 +61,44 @@ export type CharacterLog = {
   body: string
   created_at: string
   updated_at: string
+}
+
+export type RequestStatus = 'pending' | 'approved' | 'rejected'
+
+/** get_wiki_preview(): 권한이 없어도 볼 수 있는 위키 겉모습 */
+export type WikiPreview = {
+  id: string
+  name: string
+  /** 볼 권한이 없으면 null */
+  description: string | null
+  cover_url: string | null
+  theme_color: string
+  visibility: Visibility
+  owner_id: string
+  owner_nickname: string
+  can_view: boolean
+  my_request_status: RequestStatus | null
+}
+
+/** explore_wikis(): 탐색 목록 */
+export type ExploreWiki = {
+  id: string
+  name: string
+  description: string | null
+  cover_url: string | null
+  theme_color: string
+  visibility: Visibility
+  owner_nickname: string
+  character_count: number | null
+  can_view: boolean
+  my_request_status: RequestStatus | null
+  created_at: string
+}
+
+export type AccessRequest = {
+  id: string
+  wiki_id: string
+  requester_id: string
+  status: RequestStatus
+  created_at: string
 }

@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { BOLD, parseImageLine } from '../lib/richText'
+import { MediaImg } from './MediaImg'
 
 /** 로그 본문을 화면에 그리기 (형식 설명은 lib/richText.ts) */
 
@@ -17,7 +18,7 @@ export function RichText({ text, className = '' }: { text: string; className?: s
         const img = parseImageLine(line)
         if (img) {
           return (
-            <img
+            <MediaImg
               key={i}
               src={img.url}
               alt={img.alt}

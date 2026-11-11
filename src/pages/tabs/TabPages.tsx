@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../auth/AuthContext'
-import { BellIcon, BookIcon, CompassIcon } from '../../components/icons'
+import { BookIcon } from '../../components/icons'
 import { Avatar, EmptyState, PageHeader } from '../../components/ui'
 
 /** 하단 탭 화면들 (2단계: 뼈대만. 내용은 다음 단계에서 채움) */
@@ -26,32 +26,6 @@ export function HomePage() {
         icon={<BookIcon className="size-8" />}
         title="아직 보여 줄 소식이 없어요"
         description="위키를 만들면 최근 소식이 여기에 나타나요."
-      />
-    </>
-  )
-}
-
-export function ExplorePage() {
-  return (
-    <>
-      <PageHeader title="탐색" />
-      <EmptyState
-        icon={<CompassIcon className="size-8" />}
-        title="탐색 기능을 준비하고 있어요"
-        description="전체 공개된 다른 사람들의 위키를 여기서 둘러볼 수 있게 될 거예요."
-      />
-    </>
-  )
-}
-
-export function NotificationsPage() {
-  return (
-    <>
-      <PageHeader title="알림" />
-      <EmptyState
-        icon={<BellIcon className="size-8" />}
-        title="새 알림이 없어요"
-        description="열람 요청이 오거나 승인되면 여기서 알려 드릴게요."
       />
     </>
   )

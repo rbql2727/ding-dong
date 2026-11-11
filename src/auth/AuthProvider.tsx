@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import type { Session } from '@supabase/supabase-js'
+import { clearSignedUrlCache } from '../lib/signedUrl'
 import { supabase } from '../lib/supabase'
 import type { Profile } from '../lib/types'
 import { AuthContext } from './AuthContext'
@@ -36,8 +37,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => sub.subscription.unsubscribe()
   }, [])
 
-  // 2) 로그인한 사용자가 바뀌면 프로필 불러오기
+  // 2) 로그인한 사용자가 바뀌면 프로필 불러오기 (+ 이전 사용자의 이미지 주소 캐시 비우기)
   useEffect(() => {
+    clearSignedUrlCache()
     if (!userId) return
     let cancelled = false
     fetchProfile(userId).then((profile) => {

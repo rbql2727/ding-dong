@@ -13,6 +13,7 @@ import { toPreview } from '../../lib/richText'
 import { themeStyle } from '../../lib/theme'
 import type { CharacterImage } from '../../lib/types'
 import { useLoad } from '../../lib/useLoad'
+import { MediaImg } from '../../components/MediaImg'
 
 async function loadDetail(wikiId: string, charId: string) {
   const [wiki, rooms, full] = await Promise.all([getWiki(wikiId), listRooms(wikiId), getCharacterFull(charId)])
@@ -125,14 +126,12 @@ function Gallery({ full }: { full: CharacterFull }) {
         aria-label="이미지 크게 보기"
         className="block w-full bg-gray-50"
       >
-        <img
+        <MediaImg
           key={current.id}
           src={current.image_url}
           alt=""
           decoding="async"
           className="mx-auto max-h-[60vh] min-h-48 w-full object-contain"
-          // 원본이 오기 전까지 썸네일을 흐리게 보여 줌
-          style={{ backgroundImage: `url(${current.thumb_url})`, backgroundSize: 'contain', backgroundPosition: 'center', backgroundRepeat: 'no-repeat' }}
         />
       </button>
 
@@ -146,7 +145,7 @@ function Gallery({ full }: { full: CharacterFull }) {
                 aria-label={`${i + 1}번째 이미지`}
                 className={`block size-16 overflow-hidden rounded-lg bg-gray-100 ${i === selected ? 'ring-2 ring-(--wiki) ring-offset-1' : 'opacity-70'}`}
               >
-                <img src={img.thumb_url} alt="" loading="lazy" decoding="async" className="size-full object-cover" />
+                <MediaImg src={img.thumb_url} alt="" loading="lazy" decoding="async" className="size-full object-cover" />
               </button>
             </li>
           ))}

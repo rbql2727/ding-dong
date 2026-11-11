@@ -16,8 +16,11 @@ import { CloseIcon, DownIcon, LeftIcon, PlusIcon, RightIcon, StarIcon, TrashIcon
 import { BackHeader, Button, ErrorScreen, ErrorText, IconButton, InlineLoading, TextArea, TextField } from '../../components/ui'
 import { checkImageFile } from '../../lib/image'
 import { themeStyle } from '../../lib/theme'
-import type { Room, Wiki } from '../../lib/types'
+import type { Room, Visibility, Wiki } from '../../lib/types'
+import { visibilityLabel } from '../../lib/visibility'
 import { useLoad } from '../../lib/useLoad'
+import { MediaImg } from '../../components/MediaImg'
+import { VisibilityPicker } from '../../components/VisibilityPicker'
 
 /** 자주 쓰는 항목 이름 (눌러서 바로 추가) */
 const FIELD_SUGGESTIONS = ['외모', '성격', '나이', '생일', '키', '좋아하는 것', '싫어하는 것', '배경', '관계', '대사']
@@ -99,6 +102,8 @@ function CharacterForm({
   const [images, setImages] = useState<ImageDraft[]>(
     full?.images.map((img) => ({ kind: 'existing', key: img.id, image: img })) ?? [],
   )
+  // 새 캐릭터는 위키와 같은 공개 범위로 시작
+  const [visibility, setVisibility] = useState<Visibility>(full?.character.visibility ?? wiki.visibility)
   const [coverKey, setCoverKey] = useState<string | null>(full?.character.cover_image_id ?? null)
 
   const [error, setError] = useState('')
@@ -183,6 +188,7 @@ function CharacterForm({
         name: cleanName,
         tagline: tagline.trim(),
         roomId,
+        visibility,
         fields: cleanFields,
         images,
         coverKey: effectiveCoverKey,
@@ -244,7 +250,7 @@ function CharacterForm({
               return (
                 <li key={d.key} className="relative">
                   <div className={`aspect-square overflow-hidden rounded-xl bg-gray-100 ${isCover ? 'ring-3 ring-(--wiki)' : ''}`}>
-                    <img src={src} alt="" loading="lazy" decoding="async" className="size-full object-cover" />
+                    <MediaImg src={src} alt="" loading="lazy" decoding="async" className="size-full object-cover" />
                   </div>
                   <button
                     type="button"
@@ -359,6 +365,17 @@ function CharacterForm({
               </button>
             ))}
           </div>
+        </section>
+
+        {/* 공개 범위 */}
+        <section>
+          <VisibilityPicker
+            name="character-visibility"
+            legend="캐릭터 공개 범위"
+            value={visibility}
+            onChange={setVisibility}
+            hint={`위키 공개 범위(${visibilityLabel(wiki.visibility)})와 캐릭터 공개 범위를 둘 다 통과한 사람만 볼 수 있어요. 이 캐릭터만 숨기려면 '비공개'를 고르세요. 로그도 이 설정을 따라요.`}
+          />
         </section>
 
         <ErrorText>{error}</ErrorText>

@@ -1,10 +1,10 @@
 import { extractImageUrls } from '../lib/richText'
 import { mediaPaths, removeMediaUrls, uploadImageWithThumb } from '../lib/storage'
 import { supabase } from '../lib/supabase'
-import type { Character, CharacterField, CharacterImage } from '../lib/types'
+import type { Character, CharacterField, CharacterImage, Visibility } from '../lib/types'
 import { check, NotFoundError } from './db'
 
-const CHAR_COLUMNS = 'id, wiki_id, room_id, name, tagline, cover_image_id, sort_order, created_at'
+const CHAR_COLUMNS = 'id, wiki_id, room_id, name, tagline, cover_image_id, visibility, sort_order, created_at'
 const FIELD_COLUMNS = 'id, character_id, label, content, sort_order'
 const IMAGE_COLUMNS = 'id, character_id, image_url, thumb_url, sort_order'
 
@@ -81,6 +81,7 @@ export type SaveCharacterInput = {
   name: string
   tagline: string
   roomId: string | null
+  visibility: Visibility
   fields: FieldDraft[]
   images: ImageDraft[]
   /** 대표 이미지로 고른 ImageDraft 의 key (없으면 null) */
@@ -108,6 +109,7 @@ export async function saveCharacter(input: SaveCharacterInput): Promise<string> 
         room_id: input.roomId,
         name: input.name,
         tagline: input.tagline,
+        visibility: input.visibility,
         sort_order: countRes.count ?? 0,
       }),
       '캐릭터를 저장하지 못했어요.',
@@ -116,7 +118,7 @@ export async function saveCharacter(input: SaveCharacterInput): Promise<string> 
     check(
       await supabase
         .from('characters')
-        .update({ name: input.name, tagline: input.tagline, room_id: input.roomId })
+        .update({ name: input.name, tagline: input.tagline, room_id: input.roomId, visibility: input.visibility })
         .eq('id', characterId),
       '캐릭터를 저장하지 못했어요.',
     )

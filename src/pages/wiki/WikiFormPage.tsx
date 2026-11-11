@@ -1,14 +1,17 @@
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../../auth/AuthContext'
-import { createWiki, deleteWiki, getWiki, updateWiki } from '../../data/wikis'
+import { getShareToken, regenerateShareToken, shareUrl } from '../../data/sharing'
+import { createWiki, deleteWiki, getWiki, setAllCharactersVisibility, updateWiki } from '../../data/wikis'
 import { ConfirmModal } from '../../components/Modal'
 import { ImageIcon } from '../../components/icons'
 import { BackHeader, Button, ErrorScreen, ErrorText, InlineLoading, TextArea, TextField } from '../../components/ui'
 import { checkImageFile } from '../../lib/image'
 import { DEFAULT_THEME_COLOR, THEME_COLORS, themeStyle } from '../../lib/theme'
-import type { Wiki } from '../../lib/types'
+import type { Visibility, Wiki } from '../../lib/types'
 import { useLoad } from '../../lib/useLoad'
+import { MediaImg } from '../../components/MediaImg'
+import { VisibilityPicker } from '../../components/VisibilityPicker'
 
 /** 위키 만들기 (/wikis/new) */
 export function WikiCreatePage() {
@@ -45,6 +48,10 @@ function WikiForm({ wiki, onBack }: { wiki?: Wiki; onBack: () => void }) {
   const [name, setName] = useState(wiki?.name ?? '')
   const [description, setDescription] = useState(wiki?.description ?? '')
   const [themeColor, setThemeColor] = useState(wiki?.theme_color ?? DEFAULT_THEME_COLOR)
+  const [visibility, setVisibility] = useState<Visibility>(wiki?.visibility ?? 'private')
+  // 공개 범위를 바꿀 때 캐릭터들에도 같이 적용할지
+  const [applyToCharacters, setApplyToCharacters] = useState(true)
+  const visibilityChanged = !!wiki && wiki.visibility !== visibility
   // undefined = 그대로, null = 지우기, { file, url } = 새로 고름 (url 은 미리보기용)
   const [cover, setCover] = useState<{ file: File; url: string } | null | undefined>(undefined)
   const previewUrlRef = useRef<string | null>(null)
@@ -79,7 +86,7 @@ function WikiForm({ wiki, onBack }: { wiki?: Wiki; onBack: () => void }) {
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     if (!user) return
-    const input = { name: name.trim(), description: description.trim(), theme_color: themeColor }
+    const input = { name: name.trim(), description: description.trim(), theme_color: themeColor, visibility }
     if (!input.name) return setError('위키 이름을 입력해 주세요.')
 
     setSaving(true)
@@ -90,6 +97,7 @@ function WikiForm({ wiki, onBack }: { wiki?: Wiki; onBack: () => void }) {
         navigate(`/w/${created.id}`, { replace: true })
       } else {
         await updateWiki(user.id, wiki, input, cover === undefined ? undefined : cover?.file ?? null)
+        if (visibilityChanged && applyToCharacters) await setAllCharactersVisibility(wiki.id, visibility)
         navigate(`/w/${wiki.id}`, { replace: true })
       }
     } catch (err) {
@@ -112,7 +120,7 @@ function WikiForm({ wiki, onBack }: { wiki?: Wiki; onBack: () => void }) {
             className="relative flex h-40 w-full items-center justify-center overflow-hidden rounded-2xl bg-(--wiki) text-white/90"
           >
             {shownCover ? (
-              <img src={shownCover} alt="" className="absolute inset-0 size-full object-cover" />
+              <MediaImg src={shownCover} alt="" className="absolute inset-0 size-full object-cover" />
             ) : (
               <span className="flex flex-col items-center gap-1 text-sm font-medium">
                 <ImageIcon className="size-8" />
@@ -185,6 +193,31 @@ function WikiForm({ wiki, onBack }: { wiki?: Wiki; onBack: () => void }) {
           </div>
         </fieldset>
 
+        <VisibilityPicker
+          name="wiki-visibility"
+          value={visibility}
+          onChange={setVisibility}
+          hint={isNew ? '처음에는 비공개로 두고, 정리가 끝나면 바꿔도 돼요.' : undefined}
+        />
+        {visibilityChanged && (
+          <label className="-mt-3 flex items-start gap-2 rounded-xl bg-gray-50 p-3 text-sm text-gray-700">
+            <input
+              type="checkbox"
+              checked={applyToCharacters}
+              onChange={(e) => setApplyToCharacters(e.target.checked)}
+              className="mt-0.5 accent-(--wiki)"
+            />
+            <span>
+              모든 캐릭터에도 같은 공개 범위 적용
+              <span className="block text-xs text-gray-400">
+                끄면 캐릭터마다 설정한 공개 범위가 그대로 남아요. 캐릭터는 위키와 캐릭터 공개 범위를 둘 다 통과해야 보여요.
+              </span>
+            </span>
+          </label>
+        )}
+
+        {wiki && <ShareLinkSection wiki={wiki} pendingVisibility={visibility} />}
+
         <ErrorText>{error}</ErrorText>
 
         {!isNew && (
@@ -224,5 +257,56 @@ function WikiForm({ wiki, onBack }: { wiki?: Wiki; onBack: () => void }) {
         />
       )}
     </div>
+  )
+}
+
+/** 공유 링크 (링크 공개일 때만 작동) */
+function ShareLinkSection({ wiki, pendingVisibility }: { wiki: Wiki; pendingVisibility: Visibility }) {
+  const { data: token, setData, loading } = useLoad(() => getShareToken(wiki.id), [wiki.id])
+  const [copied, setCopied] = useState(false)
+  const [confirmRegen, setConfirmRegen] = useState(false)
+
+  if (pendingVisibility !== 'link') return null
+  if (wiki.visibility !== 'link') {
+    return <p className="-mt-3 text-sm text-gray-500">저장하면 공유 링크를 만들 수 있어요.</p>
+  }
+  if (loading || !token) return null
+  const url = shareUrl(token)
+
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(url)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      window.prompt('아래 링크를 복사하세요.', url)
+    }
+  }
+
+  return (
+    <section className="-mt-2 rounded-xl border border-gray-200 p-3">
+      <p className="mb-2 text-sm font-semibold">공유 링크</p>
+      <p className="mb-3 rounded-lg bg-gray-50 px-3 py-2 font-mono text-xs break-all text-gray-600">{url}</p>
+      <div className="flex gap-2">
+        <Button type="button" variant="secondary" className="h-10 text-sm" onClick={copy}>
+          {copied ? '복사했어요!' : '링크 복사'}
+        </Button>
+        <Button type="button" variant="secondary" className="h-10 text-sm" onClick={() => setConfirmRegen(true)}>
+          새 링크 만들기
+        </Button>
+      </div>
+      <p className="mt-2 text-xs text-gray-400">링크를 받은 사람은 로그인한 뒤 볼 수 있어요. 새 링크를 만들면 예전 링크로 들어온 사람은 더 이상 못 봐요.</p>
+      <ConfirmModal
+        open={confirmRegen}
+        title="새 링크를 만들까요?"
+        message="지금까지의 링크는 작동하지 않고, 그 링크로 들어왔던 사람들도 다시 볼 수 없게 돼요."
+        confirmText="새로 만들기"
+        onConfirm={async () => {
+          const next = await regenerateShareToken(wiki.id)
+          setData(() => next)
+        }}
+        onClose={() => setConfirmRegen(false)}
+      />
+    </section>
   )
 }

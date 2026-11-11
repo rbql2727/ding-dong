@@ -39,6 +39,7 @@ src/
     rooms.ts             목록, 생성, 이름 변경, 삭제, 순서 저장
     characters.ts        카드 목록(썸네일만), 전체 조회, saveCharacter(항목·이미지·대표 이미지 한 번에), 삭제
     logs.ts              목록(최신순), 조회, 생성, 수정, 삭제, 본문 이미지 업로드
+    sharing.ts           위키 미리보기, 탐색, 공유 링크(토큰 조회·재발급·열기), 열람 요청(보내기·취소·승인·거절·철회)
   components/
     AppLayout.tsx        하단 탭 5개(홈/탐색/내 위키/알림/프로필)
     SubLayout.tsx        하위 화면용 (탭 없음)
@@ -47,10 +48,15 @@ src/
     ImageViewer.tsx      이미지 크게 보기 (원본)
     LogBodyEditor.tsx    로그 본문 편집기 (굵게·이미지 넣기·미리보기)
     RichText.tsx         로그 본문 그리기
+    MediaImg.tsx         ★ 업로드한 이미지는 반드시 이걸로 표시 (서명 주소로 바꿔 줌)
+    VisibilityPicker.tsx 공개 범위 고르기
     icons.tsx            SVG 아이콘
   lib/
     supabase.ts          클라이언트 (기본 + 링크 공개용 createShareClient), SUPABASE_URL
     storage.ts           ★ 파일 경로 규칙(mediaPaths), 크기 기준(IMAGE_SIZE), 업로드/원본+썸네일 업로드/삭제
+    signedUrl.ts         서명 주소 일괄 요청 + 메모리 캐시(30분), 로그아웃 시 비움
+    useMediaUrl.ts       저장된 주소 → 화면용 주소 훅
+    visibility.ts        공개 범위 문구
     image.ts             브라우저에서 이미지 줄이기(webp, 실패 시 jpg), checkImageFile
     richText.ts          로그 본문 형식 도우미 (이미지 추출, 미리보기 글)
     useLoad.ts           데이터 불러오기 훅 (data/loading/error/reload/setData)
@@ -59,8 +65,9 @@ src/
     types.ts             DB 타입
   pages/
     auth/                LoginPage, SignupPage
-    tabs/                HomePage·ExplorePage·NotificationsPage(TabPages.tsx), ProfilePage
-    wiki/                MyWikisPage, WikiFormPage(만들기·설정), WikiHomePage(방별 캐릭터)
+    tabs/                HomePage(TabPages.tsx), ExplorePage(탐색·검색), NotificationsPage(받은/보낸 요청), ProfilePage
+    wiki/                MyWikisPage, WikiFormPage(만들기·설정·공개 범위·공유 링크), WikiHomePage(미리보기→내용 또는 잠금),
+                         LockedWikiView(열람 요청), AccessManagePage(승인 관리), ShareLinkPage(/s/:token)
     character/           CharacterFormPage(새로·편집), CharacterDetailPage(프로필/로그 탭)
     log/                 LogPages.tsx (LogDetailPage, LogEditorPage)
 supabase/
@@ -69,8 +76,10 @@ supabase/
     20261111000002_rls.sql               RLS 정책, 권한 함수, RPC
     20261111000003_storage.sql           이미지 버킷과 정책
     20261112000001_profiles_backfill.sql 프로필 없는 기존 계정 보충 (여러 번 실행해도 안전)
+    20261113000001_sharing_security.sql  4단계: 로그인 필수, 링크 열람 기록, 토큰 숨김, 탐색·미리보기 RPC, Storage 비공개+파일별 권한
   tests/
-    two_accounts_check.sql  계정 2개 권한 테스트 (SQL Editor 에서 실행, 데이터 안 남김)
+    two_accounts_check.sql      계정 2개 권한 테스트 (2단계)
+    stage4_security_check.sql   ★ 4단계 보안 테스트 53개 (a 비공개 / b 승인 전 / c 승인 후 / d 철회 + 링크·전체 공개·이미지·비로그인)
 ```
 
 ## DB 설계 요약
@@ -80,19 +89,22 @@ supabase/
 - 권한 함수는 API에 노출되지 않는 `private` 스키마에 있음 (`can_view_wiki`, `can_view_character`, `is_wiki_owner` 등)
 - RPC: `get_wiki_preview(p_wiki_id)` 승인제 위키 미리보기 + 내 요청 상태, `regenerate_share_token(p_wiki_id)` 공유 링크 재발급
 
-### 권한 규칙
+### 권한 규칙 (4단계부터)
 | 공개 범위 | 볼 수 있는 사람 |
 |---|---|
 | private | 주인만 |
-| link | 주인 + 공유 토큰을 `x-share-token` 헤더로 보낸 사람 (로그인 불필요) |
-| approved | 주인 + 열람 요청이 approved 인 사람 |
-| public | 누구나 (비로그인 포함) |
+| link | 주인 + 공유 링크(`/s/:token`)를 열어 `link_grants` 에 기록된 **로그인 사용자**. 링크 재발급(토큰 교체) 시 기록 전부 무효 |
+| approved | 주인 + 열람 요청이 approved 인 사용자. 그 외 로그인 사용자는 **제목·표지·주인 닉네임만** (get_wiki_preview / explore_wikis) |
+| public | 로그인한 모든 사용자 |
 
-- 캐릭터는 **위키 공개 범위와 캐릭터 공개 범위를 둘 다 통과**해야 보임. 항목/이미지/로그는 캐릭터를 볼 수 있으면 보임.
+- **로그인 안 한 사용자(anon)는 아무 테이블·RPC도 못 씀** (권한 자체를 회수).
+- 캐릭터는 **위키 공개 범위와 캐릭터 공개 범위를 둘 다 통과**해야 보임. 항목/이미지/로그는 소속 캐릭터를 볼 수 있으면 보임.
 - 쓰기(생성·수정·삭제)는 모두 위키 주인만.
-- 열람 요청: 공개 범위가 approved 인 남의 위키에만, pending 상태로만 생성 가능. 상태 변경(승인/거절/철회)은 주인만. 철회 = status를 rejected로 바꾸거나 행 삭제. 요청자는 자기 요청 삭제(취소) 가능 → 다시 요청 가능.
-- 공개/승인제 → 링크 공개로 바꾸면 share_token 자동 교체 (예전 열람자가 토큰을 봤을 수 있으므로).
+- `wikis.share_token` 열은 열 단위 권한으로 **주인 외 읽기 불가** → 주인은 `get_share_token()` RPC로.
+- 열람 요청: approved 위키에만, pending 상태로만 생성. unique(wiki_id, requester_id)로 중복 방지. 승인/거절/철회(=rejected)는 주인만. 요청자는 자기 요청 삭제(취소) 후 다시 요청 가능.
+- 공개/승인제 → 링크 공개로 바꾸면 share_token 자동 교체.
 - 방은 같은 위키의 방만 지정 가능, 방 삭제 시 캐릭터의 room_id만 비움. 대표 이미지는 그 캐릭터의 이미지만 가능, 이미지 삭제 시 비움.
+- RPC 목록: `get_wiki_preview`, `explore_wikis(query, limit, offset)`, `get_share_token`, `regenerate_share_token`, `redeem_share_token(token)`, `my_access_requests`.
 
 ### 화면 주소
 | 주소 | 화면 |
@@ -100,16 +112,23 @@ supabase/
 | `/wikis` | 내 위키 목록 (탭) |
 | `/wikis/new` | 위키 만들기 |
 | `/w/:wikiId` | 위키 홈 (방별 캐릭터 카드, 방 추가·이름·순서·삭제) |
-| `/w/:wikiId/settings` | 위키 설정·삭제 |
+| `/w/:wikiId/settings` | 위키 설정·공개 범위·공유 링크·삭제 |
+| `/w/:wikiId/access` | 열람 승인 관리 (받은 요청 승인·거절, 승인한 사람 철회) |
+| `/s/:token` | 공유 링크로 들어오기 (로그인 필요) |
+| `/explore` | 탐색 (전체 공개 + 승인제 위키, 검색) |
+| `/notifications` | 알림 (받은 열람 요청, 보낸 요청 상태) |
 | `/w/:wikiId/c/new?room=` | 캐릭터 만들기 |
 | `/w/:wikiId/c/:charId` (`?tab=logs`) | 캐릭터 상세 (프로필 / 로그 탭) |
 | `/w/:wikiId/c/:charId/edit` | 캐릭터 편집·삭제 |
 | `/w/:wikiId/c/:charId/logs/new`, `/logs/:logId`, `/logs/:logId/edit` | 로그 쓰기 / 보기 / 수정 |
 
 ### 이미지 저장 방식
-- Storage 버킷 `media` (공개 버킷, 10MB, jpeg/png/webp/gif).
-- 경로: `{user_id}/...` — 업로드/수정/삭제는 첫 폴더가 본인 id일 때만 (RLS).
-- 파일명은 무작위(UUID). 보기는 공개 URL (캐시·속도 목적). 주소는 RLS로 보호되는 테이블에만 저장됨.
+- Storage 버킷 `media` — **4단계부터 비공개 버킷**. 파일마다 `private.can_view_media(경로)` 정책이 볼 권한을 판단:
+  - `{uid}/avatar/*` 로그인 사용자 누구나 / `{uid}/wikis/{wikiId}/cover-*` 위키를 볼 수 있거나 승인제·전체 공개면 로그인 사용자 누구나 (탐색 표지)
+  - `{uid}/wikis/{wikiId}/characters/{charId}/...` 그 캐릭터를 볼 수 있는 사람만 (로그 이미지 포함)
+  - 폴더 주인≠위키 주인, 캐릭터≠그 위키 소속, 그 밖의 경로 → 파일 주인만
+- 업로드/수정/삭제는 첫 폴더가 본인 id일 때만.
+- DB 에는 공개 URL 형식 주소를 "파일 이름표"로 저장 (예전 데이터와 호환). **직접 열리지 않음** → 화면은 `MediaImg` 가 `createSignedUrls` 로 받은 30분짜리 서명 주소로 표시. 권한이 철회돼도 이미 받은 서명 주소는 최대 30분까지 유효.
 - 크기 기준(`lib/storage.ts` IMAGE_SIZE): 캐릭터 원본 긴 변 1600px / 썸네일 400px, 위키 표지 1200px, 프로필 256px 정사각형, 로그 본문 1600px. 모두 브라우저에서 webp로 줄여서 올림 (GIF 움직임은 사라짐).
 - 경로: `{uid}/wikis/{wikiId}/cover-*`, `{uid}/wikis/{wikiId}/characters/{charId}/{uuid}.webp` + `{uuid}_thumb.webp`, 로그는 `.../{charId}/logs/{uuid}.webp`, 프로필 `{uid}/avatar/*`.
 - **목록(위키 홈 카드, 편집 화면 그리드, 상세 하단 줄)은 thumb_url만**, 원본(image_url)은 캐릭터 상세의 큰 이미지·크게 보기에서만. 모든 목록 이미지는 `loading="lazy"` + `decoding="async"`.
@@ -131,14 +150,16 @@ supabase/
   - 사용자 할 일: `20261112000001_profiles_backfill.sql` 실행, 계정 2개로 확인.
 - [x] **3단계 위키·캐릭터**: 내 위키 목록/만들기/설정/삭제(이름·소개·표지·테마 색), 위키 홈(방별 캐릭터 카드, 방 추가·이름 변경·순서 변경·삭제), 캐릭터 만들기/편집/삭제(이름·한줄소개·방·자유 항목 추가/삭제/순서·이미지 여러 장·대표 이미지·순서), 캐릭터 상세(프로필/로그 탭, 원본은 상세에서만), 로그 목록(최신순)/상세/쓰기/수정/삭제, 본문 편집기(굵게·이미지·미리보기). 공개 범위 UI는 없음 → 모두 기본값 private(주인만).
   - 검증: 빌드·lint 통과, 가짜 데이터로 폰 화면 확인, 로컬 Postgres에서 앱의 DB 흐름을 RLS 아래 재현(주인 전부 가능 / 다른 계정 0행·쓰기 차단 / 위키 삭제 시 남는 행 0). 실제 Supabase(PostgREST·Storage)로는 사용자 PC에서 확인 필요.
-- [ ] 4단계 (예정): 공개 범위 설정·공유 링크·열람 요청/승인/철회 UI, 비로그인 열람 화면, 탐색 탭
-- [ ] 이후: 알림 탭, Capacitor 안드로이드
+- [x] **4단계 공개·승인**: 마이그레이션 `20261113000001_sharing_security.sql`(로그인 필수, 링크 열람 기록, 토큰 숨김, Storage 비공개+파일별 권한, 탐색·미리보기·링크 RPC). 위키·캐릭터 공개 범위 선택, 공유 링크(복사·재발급), 잠긴 위키 화면+열람 요청(중복 방지), 승인 관리(승인·거절·철회·재승인), 탐색(검색·더 보기), 알림(받은/보낸 요청), 모든 이미지 서명 주소로 표시.
+  - 검증: 로컬 Postgres에서 `stage4_security_check.sql` 53개 통과 + 규칙을 일부러 망가뜨리면 13개 실패하는 것 확인(테스트가 진짜로 잡아냄) + 실제 storage.objects 행 단위 정책 확인. 빌드·lint 통과, 가짜 데이터로 화면 확인.
+  - 사용자 할 일: 마이그레이션 실행, 보안 테스트 SQL 실행, 계정 2개로 화면 확인.
+- [ ] 이후: Capacitor 안드로이드, (선택) 캐릭터 순서 변경, 비밀번호 재설정, 로그 편집기 개선
 
 ## 결정 사항 메모
 - 캐릭터 visibility 기본값은 DB상 private(명세대로). 앱에서 캐릭터를 새로 만들 때는 위키의 공개 범위를 기본으로 넣어 줄 예정.
 - 명세 외로 추가한 컬럼: wikis/rooms/characters/character_images/profiles 의 `created_at`.
 - Capacitor는 화면이 생긴 뒤 단계에서 설치.
-- (2단계) 모든 탭 화면은 로그인 필요. 나중에 링크 공개/전체 공개 위키 보기 화면은 로그인 없이 열리게 별도 라우트로 둘 것.
+- (2단계) 모든 탭 화면은 로그인 필요. (4단계에서 모든 열람에 로그인 필수로 확정)
 - (2단계) 화면 전체 로딩은 "로그인 상태 확인"에만. 프로필은 화면을 먼저 보여 준 뒤 채움(네트워크가 느려도 멈추지 않게).
 - (2단계) 프로필 사진: 브라우저에서 256px 정사각형 webp로 줄여 `media/{user_id}/avatar/{uuid}.webp`에 업로드, 바꾸면 예전 파일 삭제. 원본 10MB 제한.
 - (2단계) 이메일 인증이 켜져 있으면 가입 후 "메일함 확인" 화면. 인증 링크는 `window.location.origin`으로 돌아옴 → Supabase Auth의 Site URL / Redirect URLs 설정 필요. (Capacitor 앱용 딥링크는 안드로이드 단계에서)
@@ -150,4 +171,11 @@ supabase/
 - (3단계) 로그 편집기에서 이미지는 긴 주소 한 줄로 보임(미리보기로 확인). 나중에 보기 편한 편집기로 바꿀 수 있음.
 - (3단계) 캐릭터 순서 변경 UI는 아직 없음 (방 안에서는 만든 순서).
 - (3단계) JS 번들이 500kB를 넘어 빌드 경고가 남. 나중에 화면별로 나눠 불러오기(lazy) 고려.
+- (4단계) "전체 공개"도 로그인 필요 (사용자 요구). 비로그인 열람 화면은 만들지 않음.
+- (4단계) 링크 공개는 헤더 방식 대신 "링크를 열면 DB에 열람 기록(link_grants)"으로 구현 — Storage(이미지) 권한도 같은 규칙으로 판단하려면 로그인 사용자 기준이어야 해서. 기록은 그때의 토큰과 함께 저장되고, 위키의 현재 토큰과 같을 때만 유효.
+- (4단계) 링크 공개 → 비공개 → 다시 링크 공개로 바꾸면(토큰 그대로) 예전에 링크로 들어온 사람도 다시 볼 수 있음. 완전히 막으려면 "새 링크 만들기".
+- (4단계) 공개 범위를 바꿀 때 "모든 캐릭터에도 적용"(기본 켜짐). 새 캐릭터는 위키 공개 범위로 시작. 주인 화면에서 위키와 다른 공개 범위인 캐릭터 카드에 배지 표시.
+- (4단계) 철회 = 요청 상태를 rejected 로 변경(기록 유지, "거절·철회한 요청"에서 다시 승인 가능). 요청자는 "다시 요청하기"(삭제 후 새 요청) 가능.
+- (4단계) 탐색 검색: 제목에서 찾고, 볼 권한 있는 위키만 소개에서도 찾음(잠긴 위키 소개가 검색으로 새지 않게). 내 위키는 탐색에서 제외. 20개씩.
+- (4단계) 알림 탭은 실시간 푸시가 아니라 열 때 불러오는 목록.
 - 디자인: 기본 색 indigo-500, 화면 최대 폭 max-w-md, safe-area 여백 처리.

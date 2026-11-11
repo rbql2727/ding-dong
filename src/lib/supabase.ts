@@ -38,26 +38,3 @@ export const supabase: SupabaseClient = createClient(
 
 /** 이미지 등 파일을 올리는 Storage 버킷 이름 (supabase/migrations 의 SQL과 같아야 함) */
 export const MEDIA_BUCKET = 'media'
-
-/**
- * "링크 공개" 위키를 볼 때 쓰는 클라이언트.
- *
- * 공유 링크에 들어 있는 토큰을 x-share-token 헤더로 보내면,
- * DB의 RLS 정책이 그 토큰을 확인해서 해당 위키만 읽을 수 있게 해 줍니다.
- * (로그인 정보는 쓰지 않으므로 별도 저장 공간을 사용합니다)
- */
-export function createShareClient(shareToken: string): SupabaseClient {
-  return createClient(
-    supabaseUrl ?? 'http://localhost:54321',
-    supabaseAnonKey ?? 'missing-anon-key',
-    {
-      global: { headers: { 'x-share-token': shareToken } },
-      auth: {
-        persistSession: false,
-        autoRefreshToken: false,
-        detectSessionInUrl: false,
-        storageKey: 'oc-wiki-share',
-      },
-    },
-  )
-}

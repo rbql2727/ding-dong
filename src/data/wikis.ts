@@ -1,7 +1,7 @@
 import { extractImageUrls } from '../lib/richText'
 import { IMAGE_SIZE, mediaPaths, removeMediaUrls, uploadResizedImage } from '../lib/storage'
 import { supabase } from '../lib/supabase'
-import type { Wiki } from '../lib/types'
+import type { Visibility, Wiki } from '../lib/types'
 import { check, NotFoundError } from './db'
 
 const WIKI_COLUMNS = 'id, owner_id, name, description, cover_url, theme_color, visibility, created_at'
@@ -39,6 +39,7 @@ export type WikiInput = {
   name: string
   description: string
   theme_color: string
+  visibility: Visibility
 }
 
 /**
@@ -86,6 +87,14 @@ export async function updateWiki(
   }
   if (cover_url !== wiki.cover_url) await removeMediaUrls([wiki.cover_url]) // 예전 표지 정리
   return res.data as Wiki
+}
+
+/** 위키 안 모든 캐릭터의 공개 범위를 한 번에 바꾸기 */
+export async function setAllCharactersVisibility(wikiId: string, visibility: Visibility) {
+  check(
+    await supabase.from('characters').update({ visibility }).eq('wiki_id', wikiId),
+    '캐릭터 공개 범위를 바꾸지 못했어요.',
+  )
 }
 
 /** 위키 삭제 (방·캐릭터·항목·이미지·로그가 모두 함께 지워지고, 이미지 파일도 정리) */

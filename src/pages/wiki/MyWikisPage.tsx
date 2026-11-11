@@ -5,6 +5,7 @@ import { BookIcon, PlusIcon } from '../../components/icons'
 import { EmptyState, ErrorScreen, InlineLoading, PageHeader } from '../../components/ui'
 import { themeStyle } from '../../lib/theme'
 import { useLoad } from '../../lib/useLoad'
+import { MediaImg } from '../../components/MediaImg'
 
 export function MyWikisPage() {
   const { user } = useAuth()
@@ -67,7 +68,7 @@ function WikiCard({ wiki }: { wiki: WikiWithCount }) {
     >
       <div className="relative h-28 bg-(--wiki)">
         {wiki.cover_url && (
-          <img src={wiki.cover_url} alt="" loading="lazy" decoding="async" className="size-full object-cover" />
+          <MediaImg src={wiki.cover_url} alt="" loading="lazy" decoding="async" className="size-full object-cover" />
         )}
       </div>
       <div className="flex items-start gap-3 p-4">

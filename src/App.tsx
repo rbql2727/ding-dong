@@ -9,7 +9,11 @@ import { CharacterDetailPage } from './pages/character/CharacterDetailPage'
 import { CharacterFormPage } from './pages/character/CharacterFormPage'
 import { LogDetailPage, LogEditorPage } from './pages/log/LogPages'
 import { ProfilePage } from './pages/tabs/ProfilePage'
-import { ExplorePage, HomePage, NotFoundPage, NotificationsPage } from './pages/tabs/TabPages'
+import { ExplorePage } from './pages/tabs/ExplorePage'
+import { NotificationsPage } from './pages/tabs/NotificationsPage'
+import { HomePage, NotFoundPage } from './pages/tabs/TabPages'
+import { AccessManagePage } from './pages/wiki/AccessManagePage'
+import { ShareLinkPage } from './pages/wiki/ShareLinkPage'
 import { MyWikisPage } from './pages/wiki/MyWikisPage'
 import { WikiCreatePage, WikiSettingsPage } from './pages/wiki/WikiFormPage'
 import { WikiHomePage } from './pages/wiki/WikiHomePage'
@@ -19,6 +23,8 @@ import { WikiHomePage } from './pages/wiki/WikiHomePage'
  *  - /login, /signup                    : 로그인 안 한 사람만
  *  - 하단 탭 화면 (/, /explore, /wikis…) : 로그인 필요, 하단 탭 있음
  *  - 위키·캐릭터·로그 화면 (/w/…)        : 로그인 필요, 하단 탭 없음 (뒤로 가기)
+ *  - 공유 링크 (/s/:token)               : 로그인 필요 (로그인 후 원래 링크로 돌아옴)
+ *  ※ 어떤 화면도 "로그인 안 한 사람"에게 위키 내용을 보여 주지 않음 (DB 정책도 막음)
  */
 function App() {
   if (!isSupabaseConfigured) return <SetupNotice />
@@ -39,10 +45,14 @@ function App() {
           <Route path="/profile" element={<ProfilePage />} />
         </Route>
 
+        {/* 공유 링크: 로그인 후 열람 기록을 남기고 위키로 이동 */}
+        <Route path="/s/:token" element={<ShareLinkPage />} />
+
         <Route element={<SubLayout />}>
           <Route path="/wikis/new" element={<WikiCreatePage />} />
           <Route path="/w/:wikiId" element={<WikiHomePage />} />
           <Route path="/w/:wikiId/settings" element={<WikiSettingsPage />} />
+          <Route path="/w/:wikiId/access" element={<AccessManagePage />} />
           <Route path="/w/:wikiId/c/new" element={<CharacterFormPage />} />
           <Route path="/w/:wikiId/c/:charId" element={<CharacterDetailPage />} />
           <Route path="/w/:wikiId/c/:charId/edit" element={<CharacterFormPage />} />

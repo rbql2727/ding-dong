@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { CloseIcon, LeftIcon, RightIcon } from './icons'
+import { MediaImg } from './MediaImg'
 
 /** 이미지 크게 보기 (원본) */
 export function ImageViewer({
@@ -37,7 +38,7 @@ export function ImageViewer({
         </button>
       </div>
       <div className="relative flex min-h-0 flex-1 items-center justify-center">
-        <img key={urls[index]} src={urls[index]} alt="" decoding="async" className="max-h-full max-w-full object-contain" />
+        <MediaImg key={urls[index]} src={urls[index]} alt="" decoding="async" className="max-h-full max-w-full object-contain" />
         {hasPrev && (
           <button
             type="button"
