@@ -7,6 +7,7 @@ import { listMyWikis } from '../../data/wikis'
 import { BackHeader, Button } from '../../components/ui'
 import { isChatBody } from '../../lib/chatLog'
 import { isDocBody } from '../../lib/logDocCore'
+import { supabase, SUPABASE_URL } from '../../lib/supabase'
 
 /**
  * Naru 102호 → OC 위키 이미지 가져오기 (한 번 쓰는 도구)
@@ -18,7 +19,7 @@ import { isDocBody } from '../../lib/logDocCore'
  * 이미 이미지가 있는 캐릭터, 표시가 없는 로그는 건너뜀 → 여러 번 눌러도 안전.
  */
 
-const NARU_BASE = 'https://ding-dong.naru.pub/102/'
+
 /** 가져온 위키 구분용 (위키 소개 첫머리) */
 const WIKI_MARK = 'Naru 102호'
 
@@ -48,10 +49,24 @@ const CHARACTER_IMAGES: Record<string, [string, string]> = {
 
 const MARKER = /\[🖼 ([^\]\n]+)\]/g
 
-/** Naru 파일 받기 → File (Naru 는 다른 사이트에서 가져가는 것을 허용함) */
+/**
+ * Naru 파일 받기 → File
+ * 브라우저가 Naru 를 직접 부르면 막혀서, Naru 그림은 우리 Supabase 중계 함수(naru-image)를 거쳐 받음.
+ * (함수는 로그인한 사용자만, Naru 102호 그림 파일만 허용) 다른 사이트 주소(https://…)는 직접 받음.
+ */
 async function fetchNaru(path: string): Promise<File> {
-  const url = /^https?:\/\//.test(path) ? path : NARU_BASE + path.replace(/^\.?\//, '')
-  const res = await fetch(url, { mode: 'cors' })
+  let res: Response
+  if (/^https?:\/\//.test(path)) {
+    res = await fetch(path, { mode: 'cors' })
+  } else {
+    const { data } = await supabase.auth.getSession()
+    const token = data.session?.access_token
+    if (!token) throw new Error('로그인이 필요해요.')
+    const clean = path.replace(/^\.?\//, '')
+    res = await fetch(`${SUPABASE_URL}/functions/v1/naru-image?path=${encodeURIComponent(clean)}`, {
+      headers: { Authorization: `Bearer ${token}`, apikey: import.meta.env.VITE_SUPABASE_ANON_KEY as string },
+    })
+  }
   if (!res.ok) throw new Error(`그림을 받지 못했어요 (${res.status}): ${path}`)
   const blob = await res.blob()
   const name = path.split('/').pop() || 'image'
