@@ -30,12 +30,34 @@ React + Vite + TypeScript, Tailwind CSS(v4, `@tailwindcss/vite`), React Router, 
 ## 폴더 구조
 ```
 src/
-  lib/supabase.ts      Supabase 클라이언트 (기본 + 링크 공개용 createShareClient)
-  App.tsx              (1단계) 연결 확인용 임시 화면
-supabase/migrations/   DB SQL (파일명 순서대로 적용)
-  20261111000001_tables.sql   테이블, 타입, 트리거
-  20261111000002_rls.sql      RLS 정책, 권한 함수, RPC
-  20261111000003_storage.sql  이미지 버킷과 정책
+  main.tsx               BrowserRouter + AuthProvider 로 앱 감싸기
+  App.tsx                라우트 목록 (공개 전용 / 보호 라우트)
+  auth/
+    authApi.ts           가입·로그인·로그아웃, 소셜 로그인 설정(SOCIAL_PROVIDERS), 한국어 오류 메시지
+    AuthContext.ts       useAuth() — session, user, profile, loading, profileLoading, refreshProfile
+    AuthProvider.tsx     로그인 상태 감지 + 내 프로필 불러오기
+    routes.tsx           ProtectedRoute(로그인 필요) / PublicOnlyRoute(로그인하면 홈으로)
+    SocialLoginButtons.tsx  SOCIAL_PROVIDERS 가 비면 안 보임
+  components/
+    AppLayout.tsx        하단 탭 5개(홈/탐색/내 위키/알림/프로필) 공통 틀
+    ui.tsx               Button, TextField, PageHeader, EmptyState, Avatar, Spinner 등
+    icons.tsx            SVG 아이콘
+  lib/
+    supabase.ts          Supabase 클라이언트 (기본 + 링크 공개용 createShareClient)
+    storage.ts           media 버킷 업로드/삭제 도우미
+    image.ts             브라우저에서 이미지 줄이기(webp, 실패 시 jpg)
+    types.ts             DB 타입
+  pages/
+    auth/                LoginPage, SignupPage, AuthShell
+    tabs/                HomePage·ExplorePage·MyWikisPage·NotificationsPage(TabPages.tsx), ProfilePage
+supabase/
+  migrations/            DB SQL (파일명 순서대로 적용)
+    20261111000001_tables.sql            테이블, 타입, 트리거(가입 시 프로필 자동 생성 포함)
+    20261111000002_rls.sql               RLS 정책, 권한 함수, RPC
+    20261111000003_storage.sql           이미지 버킷과 정책
+    20261112000001_profiles_backfill.sql 프로필 없는 기존 계정 보충 (여러 번 실행해도 안전)
+  tests/
+    two_accounts_check.sql  계정 2개 권한 테스트 (SQL Editor 에서 실행, 데이터 안 남김)
 ```
 
 ## DB 설계 요약
@@ -73,10 +95,18 @@ supabase/migrations/   DB SQL (파일명 순서대로 적용)
 ## 현재 단계
 - [x] **1단계 준비**: Vite+React+TS+Tailwind 프로젝트, Supabase 연결 모듈, DB 마이그레이션(테이블·RLS·Storage), .env.example. 로컬 Postgres에서 RLS 동작 테스트 40개 통과. 실제 Supabase 프로젝트에 SQL 적용 완료(사용자가 SQL Editor로 실행). GitHub `rbql2727/ding-dong` main 브랜치에 업로드.
   - 참고: Claude 클라우드 세션에서는 네트워크 정책상 supabase.co 접속이 막혀 있음 → DB 확인은 사용자 PC에서.
-- [ ] 2단계 (예정): 라우팅 + 회원가입/로그인 + 내 위키 목록/생성
+- [x] **2단계 계정**: 이메일 가입·로그인·로그아웃, 보호 라우트, 하단 탭 5개 뼈대, 프로필(닉네임·사진 변경). 소셜 로그인은 구조만(authApi.ts SOCIAL_PROVIDERS). 빌드·lint 통과, 폰 크기 화면 확인. 계정 2개 권한 테스트 SQL 추가(로컬 7개 통과).
+  - 사용자 할 일: `20261112000001_profiles_backfill.sql` 실행, 계정 2개로 확인.
+- [ ] 3단계 (예정): 내 위키 목록/생성/수정 + 공개 범위 설정
 - [ ] 이후: 방/캐릭터 CRUD, 자유 항목, 이미지 업로드(썸네일·지연 로딩), 로그, 공개 범위·공유 링크·열람 요청 UI, Capacitor 안드로이드
 
 ## 결정 사항 메모
 - 캐릭터 visibility 기본값은 DB상 private(명세대로). 앱에서 캐릭터를 새로 만들 때는 위키의 공개 범위를 기본으로 넣어 줄 예정.
 - 명세 외로 추가한 컬럼: wikis/rooms/characters/character_images/profiles 의 `created_at`.
 - Capacitor는 화면이 생긴 뒤 단계에서 설치.
+- (2단계) 모든 탭 화면은 로그인 필요. 나중에 링크 공개/전체 공개 위키 보기 화면은 로그인 없이 열리게 별도 라우트로 둘 것.
+- (2단계) 화면 전체 로딩은 "로그인 상태 확인"에만. 프로필은 화면을 먼저 보여 준 뒤 채움(네트워크가 느려도 멈추지 않게).
+- (2단계) 프로필 사진: 브라우저에서 256px 정사각형 webp로 줄여 `media/{user_id}/avatar/{uuid}.webp`에 업로드, 바꾸면 예전 파일 삭제. 원본 10MB 제한.
+- (2단계) 이메일 인증이 켜져 있으면 가입 후 "메일함 확인" 화면. 인증 링크는 `window.location.origin`으로 돌아옴 → Supabase Auth의 Site URL / Redirect URLs 설정 필요. (Capacitor 앱용 딥링크는 안드로이드 단계에서)
+- (2단계) 비밀번호 재설정은 아직 없음 (필요 시 추가).
+- 디자인: 기본 색 indigo-500, 화면 최대 폭 max-w-md, safe-area 여백 처리.

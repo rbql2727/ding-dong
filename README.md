@@ -34,5 +34,18 @@ Supabase 대시보드 → 프로젝트 선택 → **Project Settings → API** (
 1. `supabase/migrations/20261111000001_tables.sql`
 2. `supabase/migrations/20261111000002_rls.sql`
 3. `supabase/migrations/20261111000003_storage.sql`
+4. `supabase/migrations/20261112000001_profiles_backfill.sql` (2단계, 여러 번 실행해도 안전)
 
 각각 "Success. No rows returned" 가 나오면 성공입니다. **같은 파일을 두 번 실행하면 "already exists" 오류가 납니다** — 이미 적용된 것이니 다음 파일로 넘어가면 됩니다.
+
+### 3) 로그인 설정 (Authentication)
+- **Authentication → URL Configuration → Site URL**: `http://localhost:5173` (배포하면 실제 주소로)
+- **Redirect URLs**에도 `http://localhost:5173` 추가
+- 테스트할 때 인증 메일이 번거로우면: **Authentication → Sign In / Providers → Email → "Confirm email" 끄기**
+  (Supabase 기본 메일은 시간당 보낼 수 있는 개수가 적어요. 실제 서비스 전에는 다시 켜세요.)
+
+## 계정 2개로 권한 확인하기
+1. 일반 창에서 계정 A로 가입·로그인 → 프로필에서 닉네임/사진 변경
+2. **시크릿 창**(다른 브라우저도 OK)에서 계정 B로 가입·로그인 → B의 프로필에는 B 정보만 보이는지 확인
+3. 서버에서도 막히는지 확인: `supabase/tests/two_accounts_check.sql` 을 열어 위쪽 이메일 두 개를 A, B 이메일로 바꾼 뒤
+   SQL Editor 에 붙여넣고 Run → 결과 표의 **통과** 칸이 모두 `true` 면 성공 (테스트 데이터는 자동 삭제)
