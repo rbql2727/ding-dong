@@ -181,6 +181,11 @@ src/assets/fonts/        갈무리 글꼴 + 라이선스(SIL OFL)
 - **반응형**: 폰은 세로 한 줄(max-w-md) + 아래 탭. **넓은 화면(lg, 가로 1024px 이상)은 가로형**: 틀 max-w-6xl, 왼쪽 메뉴(`SideNav`), 목록은 여러 칸(위키 2~3칸, 캐릭터 4~5칸, 탐색 2칸), 캐릭터 상세는 2단(왼쪽 이미지 고정 / 오른쪽 정보·탭), 글·설정 화면은 읽기 좋은 폭(max-w-2xl~3xl) 가운데. 저장 막대는 화면 고정 대신 폼 끝에 붙어 다님(sticky).
 - 위키 표지 비율은 **8:3 고정**(`COVER_ASPECT`). 표지가 보이는 모든 칸이 이 비율이라 자르기 창에서 맞춘 그대로 보임. 프로필 사진은 1:1.
 
+## 배포 주소
+- 웹: **https://ding-dong-eight.vercel.app** (Vercel, main 에 올리면 자동 배포)
+- 이 주소를 Vercel 환경 변수·GitHub Secrets 의 `VITE_PUBLIC_SITE_URL`, Supabase Auth 의 Site URL / Redirect URLs 에 넣어 둠.
+- Vercel 은 `VITE_SUPABASE_ANON_KEY` 이름 때문에 "공개되는 값" 경고를 띄움 → publishable 키라 공개돼도 됨, 변수 종류를 Config 로 (VITE_ 접두어는 지우면 안 됨).
+
 ## 개발 명령
 - `npm install` 패키지 설치
 - `npm run dev` 개발 서버 (http://localhost:5173)
@@ -208,6 +213,7 @@ src/assets/fonts/        갈무리 글꼴 + 라이선스(SIL OFL)
   - 검증: 360px에서 17개 화면 가로 넘침 0·작은 버튼 수정(라디오는 카드 전체가 눌림), 빌드·lint·test 통과, `npx cap add android` 성공. **APK 빌드 자체는 이 클라우드 세션에 Android SDK가 없어 실행 못 함** → 사용자가 GitHub Actions 또는 PC에서 확인 필요.
   - 이후 확인: 사용자가 Secrets 넣고 GitHub Actions 실행 → **APK 빌드 성공**(약 2분, 17MB 아티팩트).
 - [x] **채팅 로그**: 로그에 "채팅 로그" 쓰는 방식 추가(붙여넣기 → 문단 자동 나누기 → 종류 고르기·숨기기 → 말풍선 보기). 테스트 17개 + 브라우저에서 붙여넣기~저장~보기까지 확인.
+- [x] **웹 배포**: Vercel 에 배포 완료 → https://ding-dong-eight.vercel.app
 - [ ] 다음(선택): 앱 아이콘·스플래시, 릴리스(서명) APK/AAB, 인증 메일 링크를 앱으로 여는 딥링크
 - [ ] 이후(선택): 캐릭터 순서 변경, 비밀번호 재설정
 

@@ -1,5 +1,7 @@
 # OC 위키 (OCWK)
 
+🌐 웹: https://ding-dong-eight.vercel.app
+
 자작 캐릭터(OC)를 위키 형태로 정리하는 앱입니다. 웹 + 안드로이드 앱.
 (React + Vite + TypeScript + Tailwind + Supabase + Capacitor)
 
@@ -111,6 +113,7 @@ Supabase 대시보드 → 프로젝트 선택 → **Project Settings → API** (
 2. Framework: **Vite** (자동 인식), Build Command `npm run build`, Output `dist` (이미 `vercel.json` 에 설정됨)
 3. **Environment Variables** 에 `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_PUBLIC_SITE_URL` 추가
 4. **Deploy** → `https://<이름>.vercel.app` 주소가 생깁니다. 이후 main 에 올릴 때마다 자동 배포.
+   - 이름에 `KEY` 가 들어간 변수에 "공개되는 값" 경고가 뜨면: publishable 키는 공개용이라 괜찮으니 변수 종류를 **Config** 로 (앞의 `VITE_` 는 지우지 마세요)
 
 ### Cloudflare Pages
 1. https://dash.cloudflare.com → **Workers & Pages → Create → Pages → Connect to Git** → 저장소 선택
