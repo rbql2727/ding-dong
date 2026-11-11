@@ -17,6 +17,7 @@ import { MyWikisPage } from './pages/wiki/MyWikisPage'
 import { WikiCreatePage, WikiSettingsPage } from './pages/wiki/WikiFormPage'
 import { WikiHomePage } from './pages/wiki/WikiHomePage'
 import { InlineLoading } from './components/ui'
+import { NativeBridge } from './components/NativeBridge'
 
 // 로그 화면은 글 편집기가 커서 필요할 때만 불러옴 (첫 화면이 빨라짐)
 const LogDetailPage = lazy(() => import('./pages/log/LogPages').then((m) => ({ default: m.LogDetailPage })))
@@ -34,6 +35,8 @@ function App() {
   if (!isSupabaseConfigured) return <SetupNotice />
 
   return (
+    <>
+    <NativeBridge />
     <Routes>
       <Route element={<PublicOnlyRoute />}>
         <Route path="/login" element={<LoginPage />} />
@@ -74,6 +77,7 @@ function App() {
 
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
+    </>
   )
 }
 

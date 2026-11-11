@@ -1,5 +1,5 @@
 import type { AuthError, Provider } from '@supabase/supabase-js'
-import { supabase } from '../lib/supabase'
+import { PUBLIC_SITE_URL, supabase } from '../lib/supabase'
 
 /**
  * 로그인 관련 기능 모음 (Supabase Auth)
@@ -8,7 +8,7 @@ import { supabase } from '../lib/supabase'
 
 /** 로그인/인증 메일 링크를 누른 뒤 돌아올 주소 */
 function redirectUrl() {
-  return window.location.origin
+  return PUBLIC_SITE_URL
 }
 
 export async function signUpWithEmail(email: string, password: string, nickname: string) {

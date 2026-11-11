@@ -63,7 +63,7 @@ export function ExplorePage() {
         />
       )}
       {data && data.length > 0 && (
-        <ul className="grid gap-3 px-4 py-2 lg:grid-cols-2 lg:px-6">
+        <ul className="grid grid-cols-1 gap-3 px-4 py-2 lg:grid-cols-2 lg:px-6">
           {data.map((w) => (
             <li key={w.id}>
               <ExploreCard wiki={w} />
@@ -101,11 +101,11 @@ function ExploreCard({ wiki }: { wiki: ExploreWiki }) {
         {wiki.cover_url && <MediaImg src={wiki.cover_url} alt="" loading="lazy" decoding="async" className="size-full object-cover" />}
       </div>
       <div className="min-w-0 flex-1 py-0.5">
-        <div className="flex items-center gap-1.5">
-          <p className="truncate font-bold text-gray-900">{wiki.name}</p>
+        <div className="flex min-w-0 items-center gap-1.5">
+          <p className="min-w-0 truncate font-bold text-gray-900">{wiki.name}</p>
           {locked && <span aria-label="잠김">🔒</span>}
         </div>
-        <p className="text-xs text-gray-500">{wiki.owner_nickname}</p>
+        <p className="truncate text-xs text-gray-500">{wiki.owner_nickname}</p>
         {locked ? (
           <p className="mt-1.5 inline-block bg-ink px-2 py-0.5 text-xs text-paper">{statusText}</p>
         ) : (

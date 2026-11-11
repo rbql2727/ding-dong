@@ -48,7 +48,7 @@ export function MyWikisPage() {
       )}
 
       {wikis && wikis.length > 0 && (
-        <ul className="grid gap-4 px-4 py-4 sm:grid-cols-2 lg:px-6 lg:py-6 xl:grid-cols-3">
+        <ul className="grid grid-cols-1 gap-4 px-4 py-4 sm:grid-cols-2 lg:px-6 lg:py-6 xl:grid-cols-3">
           {wikis.map((w) => (
             <li key={w.id}>
               <WikiCard wiki={w} />

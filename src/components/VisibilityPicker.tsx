@@ -34,7 +34,7 @@ export function VisibilityPicker({
                 value={o.value}
                 checked={checked}
                 onChange={() => onChange(o.value)}
-                className="mt-1 accent-(--wiki)"
+                className="mt-0.5 size-5 shrink-0 accent-(--wiki)"
               />
               <span>
                 <span className="block font-semibold text-gray-900">{o.label}</span>

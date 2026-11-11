@@ -57,7 +57,7 @@ export function LoginPage() {
 
       <p className="mt-8 text-center text-sm text-gray-500">
         아직 계정이 없나요?{' '}
-        <Link to="/signup" className="font-semibold text-indigo-500">
+        <Link to="/signup" className="inline-block px-2 py-2.5 font-semibold text-indigo-500">
           회원가입
         </Link>
       </p>

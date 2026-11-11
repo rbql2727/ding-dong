@@ -154,16 +154,16 @@ function WikiForm({ wiki, onBack }: { wiki?: Wiki; onBack: () => void }) {
             />
           )}
           {shownCover && (
-            <div className="mt-2 flex gap-3 text-sm">
+            <div className="mt-3 flex flex-wrap gap-2 text-sm">
               {cover?.source && (
-                <button type="button" className="font-bold text-accent" onClick={() => cropper.pick(cover.source)}>
+                <button type="button" className="px-winbtn h-10 px-3 font-bold text-accent!" onClick={() => cropper.pick(cover.source)}>
                   위치 다시 맞추기
                 </button>
               )}
-              <button type="button" className="text-gray-600" onClick={() => fileInput.current?.click()}>
+              <button type="button" className="px-winbtn h-10 px-3" onClick={() => fileInput.current?.click()}>
                 다른 사진으로
               </button>
-              <button type="button" className="text-gray-400" onClick={() => changeCover(null)}>
+              <button type="button" className="px-winbtn h-10 px-3 text-gray-500!" onClick={() => changeCover(null)}>
                 표지 지우기
               </button>
             </div>
@@ -216,7 +216,7 @@ function WikiForm({ wiki, onBack }: { wiki?: Wiki; onBack: () => void }) {
                 type="color"
                 value={themeColor}
                 onChange={(e) => setThemeColor(e.target.value)}
-                className="absolute inset-0 cursor-pointer opacity-0"
+                className="absolute inset-0 size-full cursor-pointer opacity-0"
               />
             </label>
           </div>
@@ -234,7 +234,7 @@ function WikiForm({ wiki, onBack }: { wiki?: Wiki; onBack: () => void }) {
               type="checkbox"
               checked={applyToCharacters}
               onChange={(e) => setApplyToCharacters(e.target.checked)}
-              className="mt-0.5 accent-(--wiki)"
+              className="mt-0.5 size-5 shrink-0 accent-(--wiki)"
             />
             <span>
               모든 캐릭터에도 같은 공개 범위 적용

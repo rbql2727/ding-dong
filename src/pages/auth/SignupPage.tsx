@@ -102,7 +102,7 @@ export function SignupPage() {
 
       <p className="mt-8 text-center text-sm text-gray-500">
         이미 계정이 있나요?{' '}
-        <Link to="/login" className="font-semibold text-indigo-500">
+        <Link to="/login" className="inline-block px-2 py-2.5 font-semibold text-indigo-500">
           로그인
         </Link>
       </p>

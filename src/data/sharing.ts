@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabase'
+import { PUBLIC_SITE_URL, supabase } from '../lib/supabase'
 import type { AccessRequest, ExploreWiki, Profile, RequestStatus, WikiPreview } from '../lib/types'
 import { check } from './db'
 
@@ -31,7 +31,7 @@ export async function exploreWikis(query: string, offset = 0): Promise<ExploreWi
 // ---------------------------------------------------------------------
 
 export function shareUrl(token: string) {
-  return `${window.location.origin}/s/${token}`
+  return `${PUBLIC_SITE_URL}/s/${token}`
 }
 
 /** 공유 토큰 (주인만 받을 수 있음) */

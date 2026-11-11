@@ -10,7 +10,9 @@ export const MAX_PICK_BYTES = 30 * 1024 * 1024
 
 /** 사용자가 고른 파일이 올릴 수 있는 이미지인지 확인. 문제가 있으면 한국어 메시지, 없으면 null */
 export function checkImageFile(file: File): string | null {
-  if (!file.type.startsWith('image/')) return '이미지 파일만 올릴 수 있어요.'
+  // 안드로이드 갤러리에서 고른 파일은 형식 정보가 비어 있을 때가 있어서, 비어 있으면 일단 통과
+  // (이미지가 아니면 크기를 줄이는 단계에서 "이 형식은 올릴 수 없어요" 안내가 나옴)
+  if (file.type && !file.type.startsWith('image/')) return '이미지 파일만 올릴 수 있어요.'
   if (file.size > MAX_PICK_BYTES) return '30MB 이하의 이미지만 올릴 수 있어요.'
   return null
 }

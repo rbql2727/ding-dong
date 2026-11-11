@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { useBackHandler } from '../lib/backStack'
 import { CloseIcon, LeftIcon, RightIcon } from './icons'
 import { MediaImg } from './MediaImg'
 
@@ -14,6 +15,7 @@ export function ImageViewer({
   onIndexChange: (i: number) => void
   onClose: () => void
 }) {
+  useBackHandler(true, onClose) // 안드로이드 뒤로가기 → 닫기
   const hasPrev = index > 0
   const hasNext = index < urls.length - 1
 

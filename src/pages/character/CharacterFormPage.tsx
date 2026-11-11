@@ -256,8 +256,8 @@ function CharacterForm({
                     type="button"
                     onClick={() => setCoverKey(d.key)}
                     aria-label="대표 이미지로"
-                    className={`absolute top-1 left-1 flex size-7 items-center justify-center ${
-                      isCover ? 'bg-(--wiki) text-white' : 'bg-black/40 text-white'
+                    className={`absolute top-1 left-1 flex size-9 items-center justify-center border-2 border-ink ${
+                      isCover ? 'bg-(--wiki) text-paper' : 'bg-ink/70 text-paper'
                     }`}
                   >
                     <StarIcon filled={isCover} className="size-4" />
@@ -266,7 +266,7 @@ function CharacterForm({
                     type="button"
                     onClick={() => removeImage(d.key)}
                     aria-label="이미지 빼기"
-                    className="absolute top-1 right-1 flex size-7 items-center justify-center bg-black/40 text-white"
+                    className="absolute top-1 right-1 flex size-9 items-center justify-center border-2 border-ink bg-ink/70 text-paper"
                   >
                     <CloseIcon className="size-4" />
                   </button>

@@ -30,6 +30,10 @@ React + Vite + TypeScript, Tailwind CSS(v4, `@tailwindcss/vite`), React Router, 
 
 ## 폴더 구조
 ```
+capacitor.config.ts      안드로이드 앱 설정 (앱 이름 OCWK, appId com.ocwk.app, 상태표시줄)
+android/                 Capacitor 가 만든 안드로이드 프로젝트 (웹은 npm run android:sync 로 복사됨, 복사본은 git 제외)
+.github/workflows/android-debug-apk.yml  GitHub 클라우드에서 디버그 APK 빌드
+vercel.json, public/_redirects           웹 배포(Vercel / Cloudflare Pages)에서 새로고침해도 화면 뜨게
 src/
   main.tsx               BrowserRouter + AuthProvider 로 앱 감싸기
   App.tsx                라우트 목록 (공개 전용 / 탭 화면(AppLayout) / 하위 화면(SubLayout))
@@ -42,6 +46,7 @@ src/
     logs.ts              목록(최신순), 조회, 생성, 수정, 삭제, 본문 이미지 업로드
     sharing.ts           위키 미리보기, 탐색, 공유 링크(토큰 조회·재발급·열기), 열람 요청(보내기·취소·승인·거절·철회)
   components/
+    NativeBridge.tsx     앱 전용: 안드로이드 뒤로가기 버튼, 상태표시줄 (웹에서는 아무것도 안 함)
     AppLayout.tsx        공통 틀: AppLayout(탭 화면) / SubLayout(하위 화면). 폰=아래 탭, 넓은 화면(lg 1024px+)=왼쪽 메뉴
     ImageCropModal.tsx   사진 자르기 창 (끌기·두 손가락/휠/막대 확대) — 프로필 사진·위키 표지
     ui.tsx               Button(primary/secondary/danger/dangerSolid/theme), TextField, TextArea, BackHeader, IconButton, EmptyState, Avatar 등
@@ -63,6 +68,7 @@ src/
     useMediaUrl.ts       저장된 주소 → 화면용 주소 훅
     visibility.ts        공개 범위 문구
     image.ts             브라우저에서 이미지 줄이기(webp, 실패 시 jpg), cropToBlob(자른 영역 → 이미지), checkImageFile
+    backStack.ts         뒤로가기로 닫을 창 목록 — 창 컴포넌트는 useBackHandler(열림, 닫기) 사용
     useCropPicker.ts     사진 고르기 → 자르기 창 열기 상태 관리 (미리보기 주소 정리 포함)
     logDocCore.ts        ★ 로그 문서 규칙: 허용 목록 정리(sanitizeDoc), 예전 형식 변환, 미리보기, 이미지 추출, 글꼴·색 목록
     richText.ts          logDocCore 에 "우리 Storage 이미지만" 규칙을 연결 (safeDocFromBody, extractImageUrls, toPreview)
@@ -167,6 +173,9 @@ src/assets/fonts/        갈무리 글꼴 + 라이선스(SIL OFL)
 - `npm install` 패키지 설치
 - `npm run dev` 개발 서버 (http://localhost:5173)
 - `npm run build` 배포용 빌드 / `npm run lint` 코드 검사 / `npm test` 로그 문서 보안 테스트
+- `npm run android:sync` 웹 빌드 후 안드로이드 프로젝트에 반영 / `npm run android:apk` 디버그 APK (Windows; 맥은 `cd android && ./gradlew assembleDebug`)
+- APK 위치: `android/app/build/outputs/apk/debug/app-debug.apk` / 클라우드 빌드: GitHub Actions "Android 디버그 APK" → Artifacts
+- 자세한 설치·배포 방법은 README.md
 
 ## 현재 단계
 - [x] **1단계 준비**: Vite+React+TS+Tailwind 프로젝트, Supabase 연결 모듈, DB 마이그레이션(테이블·RLS·Storage), .env.example. 로컬 Postgres에서 RLS 동작 테스트 40개 통과. 실제 Supabase 프로젝트에 SQL 적용 완료(사용자가 SQL Editor로 실행). GitHub `rbql2727/ding-dong` main 브랜치에 업로드.
@@ -183,7 +192,9 @@ src/assets/fonts/        갈무리 글꼴 + 라이선스(SIL OFL)
   - 사용자 할 일: `20261114000001_log_body_limit.sql` 실행.
 - [x] **5-2 사진 맞추기·가로형**: 프로필 사진·위키 표지를 고를 때 자르기 창(끌어서 위치, 두 손가락·휠·막대로 확대/축소), 표지는 저장 전 "위치 다시 맞추기" 가능. 넓은 화면 가로형 레이아웃(왼쪽 메뉴 + 넓은 내용, 여러 칸 목록, 캐릭터 상세 2단). 기본 테마 색 주황.
   - 검증: 브라우저에서 사진 끌기·확대 후 업로드된 파일이 256×256이고 자르기 창에서 본 영역과 똑같은지 확인, 표지 8:3 미리보기 확인, 1440px 화면 캡처 확인. 빌드·lint 통과.
-- [ ] 다음: Capacitor 안드로이드 APK
+- [x] **모바일·안드로이드**: 모든 화면 360px 폰 점검(가로 넘침·작은 버튼 자동 검사 17개 화면) 후 수정, Capacitor 8 + Android 플랫폼(OCWK), 뒤로가기(창 닫기→이전 화면→홈→앱 내리기), 상태표시줄(SystemBars 밝은 글자 + safe-area), 갤러리 사진 고르기, 공개 사이트 주소(VITE_PUBLIC_SITE_URL), GitHub Actions APK 빌드, Vercel/Cloudflare Pages 설정.
+  - 검증: 360px에서 17개 화면 가로 넘침 0·작은 버튼 수정(라디오는 카드 전체가 눌림), 빌드·lint·test 통과, `npx cap add android` 성공. **APK 빌드 자체는 이 클라우드 세션에 Android SDK가 없어 실행 못 함** → 사용자가 GitHub Actions 또는 PC에서 확인 필요.
+- [ ] 다음(선택): 앱 아이콘·스플래시, 릴리스(서명) APK/AAB, 인증 메일 링크를 앱으로 여는 딥링크
 - [ ] 이후(선택): 캐릭터 순서 변경, 비밀번호 재설정
 
 ## 결정 사항 메모
@@ -213,4 +224,9 @@ src/assets/fonts/        갈무리 글꼴 + 라이선스(SIL OFL)
 - (4단계) 철회 = 요청 상태를 rejected 로 변경(기록 유지, "거절·철회한 요청"에서 다시 승인 가능). 요청자는 "다시 요청하기"(삭제 후 새 요청) 가능.
 - (4단계) 탐색 검색: 제목에서 찾고, 볼 권한 있는 위키만 소개에서도 찾음(잠긴 위키 소개가 검색으로 새지 않게). 내 위키는 탐색에서 제외. 20개씩.
 - (4단계) 알림 탭은 실시간 푸시가 아니라 열 때 불러오는 목록.
+- (모바일) 하단 탭/상태표시줄은 CSS `env(safe-area-inset-*)` 로 처리 (Capacitor SystemBars insetsHandling='css'). 화면 위쪽은 제목 줄이 상태표시줄 뒤까지 남색으로 채움.
+- (모바일) 갤러리 업로드는 일반 `<input type="file" accept="image/*">` 그대로 (Capacitor 가 안드로이드 사진 선택기로 연결, 추가 권한 불필요). 갤러리 파일은 형식(type)이 비어 있을 수 있어 비어 있으면 통과시키고 디코딩 단계에서 확인.
+- (모바일) 앱 안의 주소는 `https://localhost` 라서 공유 링크·인증 메일 링크는 `VITE_PUBLIC_SITE_URL`(웹 배포 주소)로 만듦. 비어 있으면 현재 주소.
+- (모바일) 1열 grid 는 반드시 `grid-cols-1` (minmax(0,1fr)) — 안 그러면 말줄임(truncate) 글자 길이만큼 칸이 넓어져 화면이 가로로 넘침 (점검 중 발견). 전역 `overflow-wrap: anywhere` 로 띄어쓰기 없는 긴 글도 줄바꿈.
+- (모바일) 터치 대상은 대략 36~40px 이상.
 - 디자인: 기본 색 indigo-500, 화면 최대 폭 max-w-md, safe-area 여백 처리.

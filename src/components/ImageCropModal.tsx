@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import Cropper, { type Area } from 'react-easy-crop'
+import { useBackHandler } from '../lib/backStack'
 import { cropToBlob } from '../lib/image'
 import { Button, ErrorText } from './ui'
 
@@ -35,6 +36,11 @@ export function ImageCropModal({
   const [area, setArea] = useState<Area | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+
+  // 안드로이드 뒤로가기 → 닫기
+  useBackHandler(true, () => {
+    if (!busy) onCancel()
+  })
 
   // 키보드 Esc 로 닫기
   useEffect(() => {

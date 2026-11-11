@@ -8,9 +8,15 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "test": "node --experimental-strip-types --no-warnings tests/logDocCore.test.mts"
+    "test": "node --experimental-strip-types --no-warnings tests/logDocCore.test.mts",
+    "android:sync": "npm run build && npx cap sync android",
+    "android:apk": "npm run android:sync && cd android && gradlew assembleDebug",
+    "android:open": "npx cap open android"
   },
   "dependencies": {
+    "@capacitor/android": "^8.6.0",
+    "@capacitor/app": "^8.1.2",
+    "@capacitor/core": "^8.6.0",
     "@fontsource/noto-sans-kr": "^5.3.1",
     "@supabase/supabase-js": "^2.119.0",
     "@tiptap/extension-highlight": "^3.33.1",
@@ -28,6 +34,7 @@
     "react-router-dom": "^7.18.5"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.6.0",
     "@tailwindcss/vite": "^4.3.5",
     "@types/node": "^24.19.2",
     "@types/react": "^19.3.0",

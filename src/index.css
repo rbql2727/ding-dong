@@ -90,6 +90,8 @@ body,
 /* 밤하늘: 촘촘한 체크무늬(디더) + 흰 별 + 주황 별 */
 body {
   -webkit-tap-highlight-color: transparent;
+  /* 띄어쓰기 없는 긴 이름·글도 화면 밖으로 삐져나가지 않게 줄바꿈 */
+  overflow-wrap: anywhere;
   color: var(--color-ink);
   background-color: var(--color-night);
   background-image:

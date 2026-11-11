@@ -1,8 +1,10 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
+import { useBackHandler } from '../lib/backStack'
 import { Button, ErrorText, TextField } from './ui'
 
 /** 화면 아래에서 올라오는 창 (폰에서 쓰기 편하게) */
 export function Modal({ open, onClose, title, children }: { open: boolean; onClose: () => void; title?: string; children: ReactNode }) {
+  useBackHandler(open, onClose) // 안드로이드 뒤로가기 → 닫기
   useEffect(() => {
     if (!open) return
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
