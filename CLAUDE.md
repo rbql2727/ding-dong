@@ -71,7 +71,8 @@ supabase/migrations/   DB SQL (파일명 순서대로 적용)
 - `npm run build` 배포용 빌드 / `npm run lint` 코드 검사
 
 ## 현재 단계
-- [x] **1단계 준비**: Vite+React+TS+Tailwind 프로젝트, Supabase 연결 모듈, DB 마이그레이션(테이블·RLS·Storage), .env.example. 로컬 Postgres에서 RLS 동작 테스트 40개 통과.
+- [x] **1단계 준비**: Vite+React+TS+Tailwind 프로젝트, Supabase 연결 모듈, DB 마이그레이션(테이블·RLS·Storage), .env.example. 로컬 Postgres에서 RLS 동작 테스트 40개 통과. 실제 Supabase 프로젝트에 SQL 적용 완료(사용자가 SQL Editor로 실행). GitHub `rbql2727/ding-dong` main 브랜치에 업로드.
+  - 참고: Claude 클라우드 세션에서는 네트워크 정책상 supabase.co 접속이 막혀 있음 → DB 확인은 사용자 PC에서.
 - [ ] 2단계 (예정): 라우팅 + 회원가입/로그인 + 내 위키 목록/생성
 - [ ] 이후: 방/캐릭터 CRUD, 자유 항목, 이미지 업로드(썸네일·지연 로딩), 로그, 공개 범위·공유 링크·열람 요청 UI, Capacitor 안드로이드
 
