@@ -4,6 +4,7 @@ import { signOut } from '../../auth/authApi'
 import { CameraIcon } from '../../components/icons'
 import { Avatar, Button, ErrorText, PageHeader, Spinner, TextField } from '../../components/ui'
 import { ImageCropModal } from '../../components/ImageCropModal'
+import { ChangePasswordForm } from '../auth/PasswordPages'
 import { IMAGE_SIZE, mediaPaths, removeMediaByUrl, uploadBlob } from '../../lib/storage'
 import { useCropPicker } from '../../lib/useCropPicker'
 import { supabase } from '../../lib/supabase'
@@ -18,6 +19,7 @@ export function ProfilePage() {
   const [signingOut, setSigningOut] = useState(false)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const fileInput = useRef<HTMLInputElement>(null)
 
   // 안내 문구는 잠깐만 보여 줌
@@ -164,6 +166,30 @@ export function ProfilePage() {
         </form>
 
         <ErrorText>{error}</ErrorText>
+
+        {/* 비밀번호 변경 */}
+        <section className="space-y-3 border-t border-gray-100 pt-6">
+          {showPassword ? (
+            <>
+              <div className="flex items-center justify-between">
+                <h2 className="font-bold text-ink">비밀번호 변경</h2>
+                <button type="button" onClick={() => setShowPassword(false)} className="px-2 py-2 text-sm text-gray-500">
+                  닫기
+                </button>
+              </div>
+              <ChangePasswordForm
+                onDone={() => {
+                  setShowPassword(false)
+                  setNotice('비밀번호를 바꿨어요.')
+                }}
+              />
+            </>
+          ) : (
+            <Button variant="secondary" onClick={() => setShowPassword(true)}>
+              비밀번호 변경
+            </Button>
+          )}
+        </section>
 
         <section className="border-t border-gray-100 pt-6">
           <Button variant="danger" onClick={handleSignOut} loading={signingOut}>

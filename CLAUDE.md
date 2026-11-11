@@ -80,7 +80,7 @@ src/
     format.ts            날짜 표시 (한국어)
     types.ts             DB 타입
   pages/
-    auth/                LoginPage, SignupPage
+    auth/                LoginPage, SignupPage, PasswordPages(비밀번호 변경 폼·재설정 메일·새 비밀번호)
     tabs/                HomePage(TabPages.tsx), ExplorePage(탐색·검색), NotificationsPage(받은/보낸 요청), ProfilePage
     wiki/                MyWikisPage, WikiFormPage(만들기·설정·공개 범위·공유 링크), WikiHomePage(미리보기→내용 또는 잠금),
                          LockedWikiView(열람 요청), AccessManagePage(승인 관리), ShareLinkPage(/s/:token)
@@ -131,6 +131,8 @@ src/assets/fonts/        갈무리 글꼴 + 라이선스(SIL OFL)
 ### 화면 주소
 | 주소 | 화면 |
 |---|---|
+| `/forgot-password` | 비밀번호 재설정 메일 보내기 (로그인 안 한 사람만) |
+| `/reset-password` | 메일 링크로 들어와 새 비밀번호 정하기 (로그인 여부 무관) |
 | `/wikis` | 내 위키 목록 (탭) |
 | `/wikis/new` | 위키 만들기 |
 | `/w/:wikiId` | 위키 홈 (방별 캐릭터 카드, 방 추가·이름·순서·삭제) |
@@ -225,7 +227,9 @@ src/assets/fonts/        갈무리 글꼴 + 라이선스(SIL OFL)
   - 이미지는 앱의 한 번 쓰는 도구 `/tools/naru-import`(src/pages/tools/NaruImportPage.tsx)로: 브라우저가 Naru 이미지(CORS 허용)를 받아 줄여서 올림 — 캐릭터 액자+전신 2장(액자=대표), 로그 본문 `[🖼 경로]` 표시 → 그림. 다시 눌러도 안전(있는 건 건너뜀). 크랙(wrtn.ai) 외부 그림 4개는 받지 못할 수 있음(표시만 남음). HTML 연출 안의 <img> 그림은 옮겨지지 않음.
   - 남은 정리(사용자 확인 필요): 임시 함수 private.naru_*, 표 private.naru_import, `http` 확장 삭제. 도구로 로그를 고치면 updated_at 이 바뀌어 "수정됨"이 보임 → 끝난 뒤 SQL 로 updated_at = created_at 되돌리기.
 - [ ] 다음(선택): 앱 아이콘·스플래시, 릴리스(서명) APK/AAB, 인증 메일 링크를 앱으로 여는 딥링크
-- [ ] 이후(선택): 캐릭터 순서 변경, 비밀번호 재설정
+- [x] **비밀번호 변경·재설정**: 프로필 → "비밀번호 변경"(지금 비밀번호 확인 후 새 비밀번호, 6자 이상), 로그인 화면 → "비밀번호를 잊었어요" → 재설정 메일 → `/reset-password` 에서 새 비밀번호. 빌드·lint 통과, 360px 화면 확인.
+  - 사용자 할 일: Supabase Auth → URL Configuration → Redirect URLs 에 `https://ding-dong-eight.vercel.app/reset-password` (또는 `https://ding-dong-eight.vercel.app/**`) 추가. 안 하면 메일 링크가 홈으로 가서 재설정 화면이 안 뜸.
+- [ ] 이후(선택): 캐릭터 순서 변경
 
 ## 결정 사항 메모
 - 캐릭터 visibility 기본값은 DB상 private(명세대로). 앱에서 캐릭터를 새로 만들 때는 위키의 공개 범위를 기본으로 넣어 줄 예정.
@@ -235,7 +239,7 @@ src/assets/fonts/        갈무리 글꼴 + 라이선스(SIL OFL)
 - (2단계) 화면 전체 로딩은 "로그인 상태 확인"에만. 프로필은 화면을 먼저 보여 준 뒤 채움(네트워크가 느려도 멈추지 않게).
 - (2단계) 프로필 사진: 브라우저에서 256px 정사각형 webp로 줄여 `media/{user_id}/avatar/{uuid}.webp`에 업로드, 바꾸면 예전 파일 삭제. 원본 10MB 제한.
 - (2단계) 이메일 인증이 켜져 있으면 가입 후 "메일함 확인" 화면. 인증 링크는 `window.location.origin`으로 돌아옴 → Supabase Auth의 Site URL / Redirect URLs 설정 필요. (Capacitor 앱용 딥링크는 안드로이드 단계에서)
-- (2단계) 비밀번호 재설정은 아직 없음 (필요 시 추가).
+- 비밀번호 변경은 지금 비밀번호를 다시 확인한 뒤에만 (켜 둔 폰으로 남이 바꾸는 것 방지). 재설정 메일 링크는 웹 주소(VITE_PUBLIC_SITE_URL)로 열림 → 앱 사용자도 웹에서 바꾸고 앱에서 새 비밀번호로 로그인.
 - (3단계) 쿼리는 `data/` 에만. PostgREST 관계 자동 연결(embed)은 쓰지 않음 — characters↔character_images 사이에 FK가 두 개(character_id, 대표 이미지)라 모호해서. 필요한 건 쿼리를 나눠서 가져옴.
 - (3단계) 캐릭터 저장(saveCharacter)은 여러 단계(기본 정보→항목→이미지 삭제→새 이미지 업로드→순서→대표 이미지). 중간 실패 시 일부만 저장될 수 있어 화면에 안내.
 - (3단계) 대표 이미지를 안 고르면 첫 번째 이미지가 대표. 캐릭터당 이미지 최대 30장, 고르는 원본은 30MB까지(줄여서 올리므로).

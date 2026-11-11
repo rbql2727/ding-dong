@@ -5,6 +5,7 @@ import { AppLayout, SubLayout } from './components/AppLayout'
 import { isSupabaseConfigured } from './lib/supabase'
 import { LoginPage } from './pages/auth/LoginPage'
 import { SignupPage } from './pages/auth/SignupPage'
+import { ForgotPasswordPage, ResetPasswordPage } from './pages/auth/PasswordPages'
 import { CharacterDetailPage } from './pages/character/CharacterDetailPage'
 import { CharacterFormPage } from './pages/character/CharacterFormPage'
 import { ProfilePage } from './pages/tabs/ProfilePage'
@@ -26,7 +27,8 @@ const LogEditorPage = lazy(() => import('./pages/log/LogPages').then((m) => ({ d
 
 /**
  * 화면 주소(라우트) 목록
- *  - /login, /signup                    : 로그인 안 한 사람만
+ *  - /login, /signup, /forgot-password  : 로그인 안 한 사람만
+ *  - /reset-password                    : 비밀번호 재설정 메일 링크 (로그인 여부 무관)
  *  - 하단 탭 화면 (/, /explore, /wikis…) : 로그인 필요, 하단 탭 있음
  *  - 위키·캐릭터·로그 화면 (/w/…)        : 로그인 필요, 하단 탭 없음 (뒤로 가기)
  *  - 공유 링크 (/s/:token)               : 로그인 필요 (로그인 후 원래 링크로 돌아옴)
@@ -42,7 +44,11 @@ function App() {
       <Route element={<PublicOnlyRoute />}>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       </Route>
+
+      {/* 비밀번호 재설정 메일 링크: 링크가 잠깐 로그인시켜 주므로 로그인 여부와 상관없이 열림 */}
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
 
       <Route element={<ProtectedRoute />}>
         <Route element={<AppLayout />}>

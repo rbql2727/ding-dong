@@ -43,6 +43,40 @@ export async function signOut() {
 }
 
 // ---------------------------------------------------------------------
+// 비밀번호 변경 / 재설정
+// ---------------------------------------------------------------------
+
+/** 비밀번호 재설정 메일의 링크를 누르면 돌아올 화면 */
+export const RESET_PASSWORD_PATH = '/reset-password'
+
+/**
+ * 로그인한 상태에서 비밀번호 바꾸기.
+ * 다른 사람이 켜 둔 폰으로 몰래 바꾸지 못하도록, 지금 비밀번호를 먼저 확인합니다.
+ */
+export async function changePassword(email: string, currentPassword: string, newPassword: string) {
+  const check = await supabase.auth.signInWithPassword({ email, password: currentPassword })
+  if (check.error) {
+    const msg = toKoreanAuthError(check.error)
+    throw new Error(msg.startsWith('이메일 또는 비밀번호') ? '지금 비밀번호가 맞지 않아요.' : msg)
+  }
+  await updatePassword(newPassword)
+}
+
+/** 새 비밀번호로 바꾸기 (재설정 링크로 들어온 상태 또는 확인을 마친 상태) */
+export async function updatePassword(newPassword: string) {
+  const { error } = await supabase.auth.updateUser({ password: newPassword })
+  if (error) throw new Error(toKoreanAuthError(error))
+}
+
+/** 비밀번호를 잊었을 때: 재설정 링크가 담긴 메일 보내기 */
+export async function sendPasswordResetEmail(email: string) {
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: redirectUrl().replace(/\/+$/, '') + RESET_PASSWORD_PATH,
+  })
+  if (error) throw new Error(toKoreanAuthError(error))
+}
+
+// ---------------------------------------------------------------------
 // 소셜 로그인 (나중에 추가)
 //
 // 추가하는 방법:
@@ -80,6 +114,10 @@ export function toKoreanAuthError(error: AuthError | Error): string {
     return '이미 가입된 이메일입니다. 로그인해 주세요.'
   if (code === 'weak_password' || msg.includes('Password should be'))
     return '비밀번호가 너무 짧거나 쉬워요. 6자 이상으로 입력해 주세요.'
+  if (code === 'same_password' || msg.includes('should be different'))
+    return '지금 쓰는 비밀번호와 다른 비밀번호를 입력해 주세요.'
+  if (code === 'session_not_found' || code === 'session_expired' || msg.includes('Auth session missing'))
+    return '링크가 만료됐어요. 비밀번호 재설정 메일을 다시 받아 주세요.'
   if (code === 'email_address_invalid' || msg.includes('invalid format'))
     return '이메일 형식이 올바르지 않습니다.'
   if (code?.includes('rate_limit') || msg.toLowerCase().includes('rate limit'))

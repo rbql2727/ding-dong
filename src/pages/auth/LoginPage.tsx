@@ -51,6 +51,11 @@ export function LoginPage() {
         <Button type="submit" loading={submitting} className="mt-2">
           로그인
         </Button>
+        <div className="text-right">
+          <Link to="/forgot-password" className="inline-block px-1 py-2 text-sm text-gray-500 underline-offset-2 active:underline">
+            비밀번호를 잊었어요
+          </Link>
+        </div>
       </form>
 
       <SocialLoginButtons />
