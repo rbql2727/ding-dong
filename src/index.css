@@ -1,0 +1,12 @@
+@import "tailwindcss";
+
+/* 앱 전체 기본값: 폰 우선 */
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  -webkit-tap-highlight-color: transparent;
+}
