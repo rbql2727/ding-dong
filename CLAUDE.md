@@ -44,7 +44,8 @@ src/
     rooms.ts             목록, 생성, 이름 변경, 삭제, 순서 저장
     characters.ts        카드 목록(썸네일만), 전체 조회, saveCharacter(항목·이미지·대표 이미지 한 번에), 삭제
     logs.ts              목록(최신순), 조회, 생성, 수정, 삭제, 본문 이미지 업로드
-    sharing.ts           위키 미리보기, 탐색, 공유 링크(토큰 조회·재발급·열기), 열람 요청(보내기·취소·승인·거절·철회)
+    sharing.ts           위키 미리보기, 탐색(제목·캐릭터 이름 검색, 특정 사용자 위키), 공유 링크(토큰 조회·재발급·열기), 열람 요청(보내기·취소·승인·거절·철회)
+    friends.ts           계정 검색, 다른 사람 프로필+관계, 친구 신청·수락·거절·끊기, 친구 목록, 홈 소식(home_feed)
   components/
     NativeBridge.tsx     앱 전용: 안드로이드 뒤로가기 버튼, 상태표시줄 (웹에서는 아무것도 안 함)
     AppLayout.tsx        공통 틀: AppLayout(탭 화면) / SubLayout(하위 화면). 폰=아래 탭, 넓은 화면(lg 1024px+)=왼쪽 메뉴
@@ -62,6 +63,8 @@ src/
       ChatLogView.tsx    채팅 로그 보기 (말풍선, 번역은 앞 말풍선 아래, 이어진 상태창은 한 카드)
     MediaImg.tsx         ★ 업로드한 이미지는 반드시 이걸로 표시 (서명 주소로 바꿔 줌)
     VisibilityPicker.tsx 공개 범위 고르기
+    ExploreCard.tsx      탐색·프로필 화면의 위키 카드 (검색에 걸린 캐릭터 이름 표시)
+    FriendBits.tsx       친구 관계 배지, 사람 한 줄(PersonRow), 내 고유코드+복사(MyFriendCode)
     icons.tsx            SVG 아이콘
   lib/
     supabase.ts          클라이언트 (기본 + 링크 공개용 createShareClient), SUPABASE_URL
@@ -81,7 +84,8 @@ src/
     types.ts             DB 타입
   pages/
     auth/                LoginPage, SignupPage, PasswordPages(비밀번호 변경 폼·재설정 메일·새 비밀번호)
-    tabs/                HomePage(TabPages.tsx), ExplorePage(탐색·검색), NotificationsPage(받은/보낸 요청), ProfilePage
+    tabs/                HomePage(TabPages.tsx, 최근 로그), ExplorePage(위키/계정 탭 검색, 내 고유코드·친구 목록), NotificationsPage(받은 친구 신청·열람 요청), ProfilePage(고유코드·비밀번호 변경)
+    user/                UserProfilePage(/u/:userId — 프로필, 친구 신청/수락/끊기, 볼 수 있는 위키)
     wiki/                MyWikisPage, WikiFormPage(만들기·설정·공개 범위·공유 링크), WikiHomePage(미리보기→내용 또는 잠금),
                          LockedWikiView(열람 요청), AccessManagePage(승인 관리), ShareLinkPage(/s/:token)
     character/           CharacterFormPage(새로·편집), CharacterDetailPage(프로필/로그 탭)
@@ -95,8 +99,11 @@ supabase/
     20261113000001_sharing_security.sql  4단계: 로그인 필수, 링크 열람 기록, 토큰 숨김, 탐색·미리보기 RPC, Storage 비공개+파일별 권한
     20261114000001_log_body_limit.sql    로그 본문 길이 제한 5만 → 30만 자 (편집기 문서 JSON 용)
     20261115000001_media_url_guard.sql   이미지 주소 칸(프로필·표지·캐릭터 이미지)에 우리 Storage 의 자기 폴더 주소만 저장 (보안 점검 S1)
+    20261116000001_friends_enum.sql      공개 범위에 friends 추가 (enum 은 따로 먼저 실행해야 해서 분리)
+    20261116000002_friends.sql           고유코드, friendships, friends 권한, 계정 검색·친구 신청·홈 소식 RPC, explore_wikis 확장
   tests/
     two_accounts_check.sql      계정 2개 권한 테스트 (2단계)
+    friends_check.sql           ★ 친구 기능 보안 테스트 34개 (계정 3개: 주인 / 친구 / 남)
     stage4_security_check.sql   ★ 보안 테스트 58개 (a 비공개 / b 승인 전 / c 승인 후 / d 철회 + 링크·전체 공개·이미지·비로그인 + 이미지 주소 칸 보호)
 tests/
   logDocCore.test.mts    로그 문서 정리(보안) 테스트 21개 — `npm test`
@@ -105,8 +112,8 @@ src/assets/fonts/        갈무리 글꼴 + 라이선스(SIL OFL)
 ```
 
 ## DB 설계 요약
-- 테이블: profiles, wikis, rooms, characters, character_fields, character_images, character_logs, access_requests
-- enum: `visibility_level`(private/link/approved/public), `request_status`(pending/approved/rejected)
+- 테이블: profiles(+friend_code), wikis, rooms, characters, character_fields, character_images, character_logs, access_requests, link_grants, friendships
+- enum: `visibility_level`(private/link/friends/approved/public), `request_status`(pending/approved/rejected)
 - 회원가입 시 트리거가 profiles 행 자동 생성 (닉네임: 가입 시 metadata.nickname → 이메일 앞부분 → '새 사용자')
 - 권한 함수는 API에 노출되지 않는 `private` 스키마에 있음 (`can_view_wiki`, `can_view_character`, `is_wiki_owner` 등)
 - RPC: `get_wiki_preview(p_wiki_id)` 승인제 위키 미리보기 + 내 요청 상태, `regenerate_share_token(p_wiki_id)` 공유 링크 재발급
@@ -117,6 +124,7 @@ src/assets/fonts/        갈무리 글꼴 + 라이선스(SIL OFL)
 | private | 주인만 |
 | link | 주인 + 공유 링크(`/s/:token`)를 열어 `link_grants` 에 기록된 **로그인 사용자**. 링크 재발급(토큰 교체) 시 기록 전부 무효 |
 | approved | 주인 + 열람 요청이 approved 인 사용자. 그 외 로그인 사용자는 **제목·표지·주인 닉네임만** (get_wiki_preview / explore_wikis) |
+| friends | 주인 + 주인과 친구(friendships accepted)인 로그인 사용자 |
 | public | 로그인한 모든 사용자 |
 
 - **로그인 안 한 사용자(anon)는 아무 테이블·RPC도 못 씀** (권한 자체를 회수).
@@ -126,7 +134,11 @@ src/assets/fonts/        갈무리 글꼴 + 라이선스(SIL OFL)
 - 열람 요청: approved 위키에만, pending 상태로만 생성. unique(wiki_id, requester_id)로 중복 방지. 승인/거절/철회(=rejected)는 주인만. 요청자는 자기 요청 삭제(취소) 후 다시 요청 가능.
 - 공개/승인제 → 링크 공개로 바꾸면 share_token 자동 교체.
 - 방은 같은 위키의 방만 지정 가능, 방 삭제 시 캐릭터의 room_id만 비움. 대표 이미지는 그 캐릭터의 이미지만 가능, 이미지 삭제 시 비움.
-- RPC 목록: `get_wiki_preview`, `explore_wikis(query, limit, offset)`, `get_share_token`, `regenerate_share_token`, `redeem_share_token(token)`, `my_access_requests`.
+- 친구: 각자 8자리 **고유코드**(profiles.friend_code, 0/O/1/I 제외, 자동 생성·변경 불가). 친구 신청은 `send_friend_request` 로만(상대가 이미 나에게 신청했으면 바로 친구). 두 사람 사이 관계는 한 줄(unique). 수락은 받은 사람만(상태 열만 수정 가능), 삭제(거절·취소·끊기)는 둘 중 누구나.
+- 홈 소식 `home_feed`: **나 + 친구의 위키**에서 내가 볼 수 있는 캐릭터의 로그만, 최신순 20개씩.
+- 탐색 `explore_wikis`: 전체 공개·승인제 + 볼 수 있는 친구 공개 위키. 검색은 제목 / **볼 수 있는 캐릭터 이름** / 볼 수 있는 위키 소개. `p_owner` 로 그 사람 위키만(프로필 화면).
+- 계정 검색 `search_profiles`: 고유코드 정확히(앞 # 무시) 또는 닉네임 일부. 닉네임·사진·고유코드만 돌려줌.
+- RPC 목록: `get_wiki_preview`, `explore_wikis(query, limit, offset, owner)`, `search_profiles`, `send_friend_request`, `home_feed(limit, before)`, `get_share_token`, `regenerate_share_token`, `redeem_share_token(token)`, `my_access_requests`.
 
 ### 화면 주소
 | 주소 | 화면 |
@@ -139,8 +151,9 @@ src/assets/fonts/        갈무리 글꼴 + 라이선스(SIL OFL)
 | `/w/:wikiId/settings` | 위키 설정·공개 범위·공유 링크·삭제 |
 | `/w/:wikiId/access` | 열람 승인 관리 (받은 요청 승인·거절, 승인한 사람 철회) |
 | `/s/:token` | 공유 링크로 들어오기 (로그인 필요) |
-| `/explore` | 탐색 (전체 공개 + 승인제 위키, 검색) |
-| `/notifications` | 알림 (받은 열람 요청, 보낸 요청 상태) |
+| `/explore` (`?tab=accounts`) | 탐색: 위키 탭(위키 제목·캐릭터 이름 검색) / 계정 탭(닉네임·고유코드 검색, 내 고유코드, 친구 목록) |
+| `/u/:userId` | 다른 사람 프로필 (친구 신청·수락·거절·끊기, 볼 수 있는 위키) |
+| `/notifications` | 알림 (받은 친구 신청 수락·거절, 받은 열람 요청, 보낸 요청 상태) |
 | `/w/:wikiId/c/new?room=` | 캐릭터 만들기 |
 | `/w/:wikiId/c/:charId` (`?tab=logs`) | 캐릭터 상세 (프로필 / 로그 탭) |
 | `/w/:wikiId/c/:charId/edit` | 캐릭터 편집·삭제 |
@@ -229,7 +242,9 @@ src/assets/fonts/        갈무리 글꼴 + 라이선스(SIL OFL)
 - [ ] 다음(선택): 앱 아이콘·스플래시, 릴리스(서명) APK/AAB, 인증 메일 링크를 앱으로 여는 딥링크
 - [x] **비밀번호 변경·재설정**: 프로필 → "비밀번호 변경"(지금 비밀번호 확인 후 새 비밀번호, 6자 이상), 로그인 화면 → "비밀번호를 잊었어요" → 재설정 메일 → `/reset-password` 에서 새 비밀번호. 빌드·lint 통과, 360px 화면 확인.
   - 사용자 할 일: Supabase Auth → URL Configuration → Redirect URLs 에 `https://ding-dong-eight.vercel.app/reset-password` (또는 `https://ding-dong-eight.vercel.app/**`) 추가. 안 하면 메일 링크가 홈으로 가서 재설정 화면이 안 뜸.
-- [ ] 이후(선택): 캐릭터 순서 변경
+- [x] **홈 소식·탐색 필터·친구**: 홈에 최근 로그(나+친구), 탐색 [위키|계정] 탭, 고유코드·친구 신청/수락/끊기, 공개 범위 "친구 공개", 알림에 받은 친구 신청, 프로필에 내 고유코드.
+  - 검증: 로컬 Postgres 와 **실제 DB 에서 친구 테스트 34개 통과**(실제 DB 는 끝에 되돌림 — 남은 데이터 0 확인), 친구 규칙을 일부러 망가뜨리면 9개 실패, 기존 보안 테스트 58개 그대로 통과(로컬). 빌드·lint 통과, 360px 화면 7개 확인(가로 넘침 0). 마이그레이션 2개는 커넥터로 실제 DB 에 적용 완료.
+- [ ] 이후(선택): 캐릭터 순서 변경, 친구 신청 알림을 실시간(푸시)으로
 
 ## 결정 사항 메모
 - 캐릭터 visibility 기본값은 DB상 private(명세대로). 앱에서 캐릭터를 새로 만들 때는 위키의 공개 범위를 기본으로 넣어 줄 예정.
@@ -258,6 +273,9 @@ src/assets/fonts/        갈무리 글꼴 + 라이선스(SIL OFL)
 - (4단계) 철회 = 요청 상태를 rejected 로 변경(기록 유지, "거절·철회한 요청"에서 다시 승인 가능). 요청자는 "다시 요청하기"(삭제 후 새 요청) 가능.
 - (4단계) 탐색 검색: 제목에서 찾고, 볼 권한 있는 위키만 소개에서도 찾음(잠긴 위키 소개가 검색으로 새지 않게). 내 위키는 탐색에서 제외. 20개씩.
 - (4단계) 알림 탭은 실시간 푸시가 아니라 열 때 불러오는 목록.
+- (친구) 홈 소식은 전체 공개 위키 전부가 아니라 나와 친구의 것만 (모르는 사람 글로 홈이 넘치지 않게). 친구의 위키라도 내가 볼 권한이 있는 로그만(친구 공개·전체 공개·승인받은 것 등).
+- (친구) 친구 공개 위키는 친구가 아닌 사람에게는 탐색에도 안 보이고, 주소로 열어도 "볼 수 없음". 친구를 끊으면 바로 다시 못 봄(이미 받은 이미지 서명 주소는 최대 30분).
+- (친구) 홈 소식에는 로그 본문 미리보기 없이 제목·캐릭터·위키·작성자만 (본문 JSON 이 커서 목록이 느려지지 않게).
 - (모바일) 하단 탭/상태표시줄은 CSS `env(safe-area-inset-*)` 로 처리 (Capacitor SystemBars insetsHandling='css'). 화면 위쪽은 제목 줄이 상태표시줄 뒤까지 남색으로 채움.
 - (모바일) 갤러리 업로드는 일반 `<input type="file" accept="image/*">` 그대로 (Capacitor 가 안드로이드 사진 선택기로 연결, 추가 권한 불필요). 갤러리 파일은 형식(type)이 비어 있을 수 있어 비어 있으면 통과시키고 디코딩 단계에서 확인.
 - (모바일) 앱 안의 주소는 `https://localhost` 라서 공유 링크·인증 메일 링크는 `VITE_PUBLIC_SITE_URL`(웹 배포 주소)로 만듦. 비어 있으면 현재 주소.

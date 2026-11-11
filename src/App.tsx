@@ -16,6 +16,7 @@ import { AccessManagePage } from './pages/wiki/AccessManagePage'
 import { ShareLinkPage } from './pages/wiki/ShareLinkPage'
 import { NaruImportPage } from './pages/tools/NaruImportPage'
 import { MyWikisPage } from './pages/wiki/MyWikisPage'
+import { UserProfilePage } from './pages/user/UserProfilePage'
 import { WikiCreatePage, WikiSettingsPage } from './pages/wiki/WikiFormPage'
 import { WikiHomePage } from './pages/wiki/WikiHomePage'
 import { InlineLoading } from './components/ui'
@@ -70,6 +71,7 @@ function App() {
           }
         >
           <Route path="/wikis/new" element={<WikiCreatePage />} />
+          <Route path="/u/:userId" element={<UserProfilePage />} />
           <Route path="/w/:wikiId" element={<WikiHomePage />} />
           <Route path="/w/:wikiId/settings" element={<WikiSettingsPage />} />
           <Route path="/w/:wikiId/access" element={<AccessManagePage />} />

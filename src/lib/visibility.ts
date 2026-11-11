@@ -4,6 +4,7 @@ import type { Visibility } from './types'
 export const VISIBILITY_OPTIONS: { value: Visibility; label: string; description: string }[] = [
   { value: 'private', label: '비공개', description: '나만 볼 수 있어요.' },
   { value: 'link', label: '링크 공개', description: '공유 링크를 받은 사람만, 로그인하면 볼 수 있어요.' },
+  { value: 'friends', label: '친구 공개', description: '친구로 등록한 사람만 볼 수 있어요. 새 로그가 친구 홈에 떠요.' },
   {
     value: 'approved',
     label: '승인한 사람만',

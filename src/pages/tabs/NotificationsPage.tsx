@@ -1,5 +1,8 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../auth/AuthContext'
+import { acceptFriendRequest, listFriendships, removeFriendship, type FriendEntry } from '../../data/friends'
+import { PersonRow } from '../../components/FriendBits'
 import { listMyRequests, listReceivedPending, type MyRequest, type RequestWithProfile } from '../../data/sharing'
 import { listMyWikis } from '../../data/wikis'
 import { MediaImg } from '../../components/MediaImg'
@@ -11,12 +14,20 @@ import { useLoad } from '../../lib/useLoad'
 
 async function load(userId: string) {
   const wikis = await listMyWikis(userId)
-  const [received, mine] = await Promise.all([listReceivedPending(wikis.map((w) => w.id)), listMyRequests()])
+  const [received, mine, friends] = await Promise.all([
+    listReceivedPending(wikis.map((w) => w.id)),
+    listMyRequests(),
+    listFriendships(userId),
+  ])
   const wikiName = new Map(wikis.map((w) => [w.id, w.name]))
-  return { received: received.map((r) => ({ ...r, wikiName: wikiName.get(r.wiki_id) ?? '' })), mine }
+  return {
+    received: received.map((r) => ({ ...r, wikiName: wikiName.get(r.wiki_id) ?? '' })),
+    mine,
+    friendRequests: friends.received,
+  }
 }
 
-/** 알림: 내 위키에 온 열람 요청 + 내가 보낸 요청 상태 */
+/** 알림: 받은 친구 신청 + 내 위키에 온 열람 요청 + 내가 보낸 요청 상태 */
 export function NotificationsPage() {
   const { user } = useAuth()
   const { data, loading, error, reload } = useLoad(() => load(user!.id), [user?.id])
@@ -26,12 +37,22 @@ export function NotificationsPage() {
       <PageHeader title="알림" />
       {loading && <InlineLoading />}
       {error && <ErrorScreen message={error} onRetry={reload} />}
-      {data && data.received.length === 0 && data.mine.length === 0 && (
+      {data && data.received.length === 0 && data.mine.length === 0 && data.friendRequests.length === 0 && (
         <EmptyState
           icon={<BellIcon className="size-8" />}
           title="새 알림이 없어요"
-          description="열람 요청이 오거나, 내가 보낸 요청이 승인되면 여기서 볼 수 있어요."
+          description="친구 신청이나 열람 요청이 오거나, 내가 보낸 요청이 승인되면 여기서 볼 수 있어요."
         />
+      )}
+      {data && data.friendRequests.length > 0 && (
+        <section className="px-4 pt-4 lg:mx-auto lg:max-w-2xl lg:px-8 lg:pt-6">
+          <h2 className="mb-1 font-bold">받은 친구 신청</h2>
+          <ul className="divide-y divide-gray-100">
+            {data.friendRequests.map((f) => (
+              <FriendRequestRow key={f.friendship.id} entry={f} onDone={reload} />
+            ))}
+          </ul>
+        </section>
       )}
       {data && data.received.length > 0 && (
         <section className="px-4 pt-4 lg:mx-auto lg:max-w-2xl lg:px-8 lg:pt-6">
@@ -97,5 +118,50 @@ function MineRow({ req }: { req: MyRequest }) {
         <span className={`shrink-0 px-2 py-0.5 text-xs font-medium ${STATUS_STYLE[req.status]}`}>{STATUS_TEXT[req.status]}</span>
       </Link>
     </li>
+  )
+}
+
+function FriendRequestRow({ entry, onDone }: { entry: FriendEntry; onDone: () => void }) {
+  const [busy, setBusy] = useState<'accept' | 'reject' | null>(null)
+  const [error, setError] = useState('')
+  async function run(kind: 'accept' | 'reject') {
+    setBusy(kind)
+    setError('')
+    try {
+      if (kind === 'accept') await acceptFriendRequest(entry.friendship.id)
+      else await removeFriendship(entry.friendship.id)
+      onDone()
+    } catch (err) {
+      setError((err as Error).message)
+      setBusy(null)
+    }
+  }
+  return (
+    <>
+      <PersonRow
+        profile={entry.profile}
+        right={
+          <div className="flex shrink-0 gap-1.5">
+            <button
+              type="button"
+              disabled={!!busy}
+              onClick={() => run('reject')}
+              className="px-btn h-9 bg-paper px-3 text-sm font-bold text-ink"
+            >
+              거절
+            </button>
+            <button
+              type="button"
+              disabled={!!busy}
+              onClick={() => run('accept')}
+              className="px-btn h-9 bg-accent px-3 text-sm font-bold text-paper"
+            >
+              {busy === 'accept' ? '…' : '수락'}
+            </button>
+          </div>
+        }
+      />
+      {error && <li className="pb-2 text-xs text-red-600">{error}</li>}
+    </>
   )
 }

@@ -5,6 +5,8 @@ import { CameraIcon } from '../../components/icons'
 import { Avatar, Button, ErrorText, PageHeader, Spinner, TextField } from '../../components/ui'
 import { ImageCropModal } from '../../components/ImageCropModal'
 import { ChangePasswordForm } from '../auth/PasswordPages'
+import { MyFriendCode } from '../../components/FriendBits'
+import { Link } from 'react-router-dom'
 import { IMAGE_SIZE, mediaPaths, removeMediaByUrl, uploadBlob } from '../../lib/storage'
 import { useCropPicker } from '../../lib/useCropPicker'
 import { supabase } from '../../lib/supabase'
@@ -149,6 +151,14 @@ export function ProfilePage() {
             </button>
           )}
           <p className="text-sm text-gray-500">{user.email}</p>
+        </section>
+
+        {/* 고유코드 (친구 찾기용) */}
+        <section className="space-y-2">
+          <MyFriendCode code={profile?.friend_code} />
+          <Link to="/explore?tab=accounts" className="block py-1 text-center text-sm font-semibold text-indigo-500">
+            친구 목록 · 친구 찾기 ▶
+          </Link>
         </section>
 
         {/* 닉네임 */}

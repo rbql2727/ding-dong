@@ -8,7 +8,7 @@ import { AuthContext } from './AuthContext'
 async function fetchProfile(id: string): Promise<Profile | null> {
   const { data, error } = await supabase
     .from('profiles')
-    .select('id, nickname, avatar_url')
+    .select('id, nickname, avatar_url, friend_code')
     .eq('id', id)
     .maybeSingle()
   if (error) console.error('[프로필 불러오기 실패]', error)

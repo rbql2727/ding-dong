@@ -18,10 +18,19 @@ export async function getWikiPreview(wikiId: string): Promise<WikiPreview | null
 
 export const EXPLORE_PAGE_SIZE = 20
 
-/** 탐색: 전체 공개 + 승인제 위키 (승인 전에는 제목·표지만) */
-export async function exploreWikis(query: string, offset = 0): Promise<ExploreWiki[]> {
+/**
+ * 탐색: 전체 공개 + 승인제(승인 전에는 제목·표지만) + 볼 수 있는 친구 공개 위키
+ * 검색어는 위키 제목·캐릭터 이름(볼 수 있는 것만)·소개(볼 수 있는 위키만)에서 찾음.
+ * ownerId 를 주면 그 사람의 위키만 (프로필 화면).
+ */
+export async function exploreWikis(query: string, offset = 0, ownerId?: string, limit = EXPLORE_PAGE_SIZE): Promise<ExploreWiki[]> {
   return check(
-    await supabase.rpc('explore_wikis', { p_query: query, p_limit: EXPLORE_PAGE_SIZE, p_offset: offset }),
+    await supabase.rpc('explore_wikis', {
+      p_query: query,
+      p_limit: limit,
+      p_offset: offset,
+      ...(ownerId ? { p_owner: ownerId } : {}),
+    }),
     '위키 목록을 불러오지 못했어요.',
   ) as ExploreWiki[]
 }
