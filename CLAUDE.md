@@ -94,9 +94,10 @@ supabase/
     20261112000001_profiles_backfill.sql 프로필 없는 기존 계정 보충 (여러 번 실행해도 안전)
     20261113000001_sharing_security.sql  4단계: 로그인 필수, 링크 열람 기록, 토큰 숨김, 탐색·미리보기 RPC, Storage 비공개+파일별 권한
     20261114000001_log_body_limit.sql    로그 본문 길이 제한 5만 → 30만 자 (편집기 문서 JSON 용)
+    20261115000001_media_url_guard.sql   이미지 주소 칸(프로필·표지·캐릭터 이미지)에 우리 Storage 의 자기 폴더 주소만 저장 (보안 점검 S1)
   tests/
     two_accounts_check.sql      계정 2개 권한 테스트 (2단계)
-    stage4_security_check.sql   ★ 4단계 보안 테스트 53개 (a 비공개 / b 승인 전 / c 승인 후 / d 철회 + 링크·전체 공개·이미지·비로그인)
+    stage4_security_check.sql   ★ 보안 테스트 58개 (a 비공개 / b 승인 전 / c 승인 후 / d 철회 + 링크·전체 공개·이미지·비로그인 + 이미지 주소 칸 보호)
 tests/
   logDocCore.test.mts    로그 문서 정리(보안) 테스트 21개 — `npm test`
   chatLog.test.mts       채팅 로그 나누기·묶기·정리 테스트 17개 — `npm test`
@@ -149,6 +150,7 @@ src/assets/fonts/        갈무리 글꼴 + 라이선스(SIL OFL)
   - `{uid}/wikis/{wikiId}/characters/{charId}/...` 그 캐릭터를 볼 수 있는 사람만 (로그 이미지 포함)
   - 폴더 주인≠위키 주인, 캐릭터≠그 위키 소속, 그 밖의 경로 → 파일 주인만
 - 업로드/수정/삭제는 첫 폴더가 본인 id일 때만.
+- **이미지 주소 칸은 우리 Storage 주소만** (7번 마이그레이션 CHECK 제약): 프로필은 `/media/{내 id}/avatar/`, 표지는 `/media/{주인}/wikis/{위키}/`, 캐릭터 이미지는 `/characters/{그 캐릭터}/` 포함. 화면(`useMediaUrl`)도 우리 Storage 주소와 기기 미리보기(blob:)만 표시하고 그 밖의 주소는 아예 불러오지 않음 → 다른 사이트 추적 이미지로 IP 가 새는 것 방지.
 - DB 에는 공개 URL 형식 주소를 "파일 이름표"로 저장 (예전 데이터와 호환). **직접 열리지 않음** → 화면은 `MediaImg` 가 `createSignedUrls` 로 받은 30분짜리 서명 주소로 표시. 권한이 철회돼도 이미 받은 서명 주소는 최대 30분까지 유효.
 - 크기 기준(`lib/storage.ts` IMAGE_SIZE): 캐릭터 원본 긴 변 1600px / 썸네일 400px, 위키 표지 1200px, 프로필 256px 정사각형, 로그 본문 1600px. 모두 브라우저에서 webp로 줄여서 올림 (GIF 움직임은 사라짐).
 - 경로: `{uid}/wikis/{wikiId}/cover-*`, `{uid}/wikis/{wikiId}/characters/{charId}/{uuid}.webp` + `{uuid}_thumb.webp`, 로그는 `.../{charId}/logs/{uuid}.webp`, 프로필 `{uid}/avatar/*`.
@@ -214,6 +216,9 @@ src/assets/fonts/        갈무리 글꼴 + 라이선스(SIL OFL)
   - 이후 확인: 사용자가 Secrets 넣고 GitHub Actions 실행 → **APK 빌드 성공**(약 2분, 17MB 아티팩트).
 - [x] **채팅 로그**: 로그에 "채팅 로그" 쓰는 방식 추가(붙여넣기 → 문단 자동 나누기 → 종류 고르기·숨기기 → 말풍선 보기). 테스트 17개 + 브라우저에서 붙여넣기~저장~보기까지 확인.
 - [x] **웹 배포**: Vercel 에 배포 완료 → https://ding-dong-eight.vercel.app
+- [x] **보안 점검 + S1 수정**: 전체 점검 보고(보안 S1~S5, 버그 B1~B9). S1(이미지 주소 칸에 외부 주소 → 보는 사람 IP 노출) 수정: 화면은 외부 주소 불러오지 않음 + DB CHECK 제약. 검증: 보안 테스트 58개 통과, 예전 이상한 값이 있어도 마이그레이션 실패 안 함, 브라우저에서 외부 이미지 요청 0건(예전 코드로 되돌리면 4건 → 테스트가 실제로 잡아냄).
+  - 남은 점검 항목(선택): B1 새 캐릭터 저장 실패 후 재시도 시 중복 생성, B2/B3 오류 시 흰 화면(에러 바운더리·배포 직후 로그 화면), B4 캐릭터 공개 범위 링크/승인이 위키와 다르면 아무도 못 봄, B5 저장 안 하고 나가기 경고 없음, S2 보안 헤더(CSP), S3 서버 업로드 한도, B6~B9 사소한 것.
+  - 사용자 할 일: `20261115000001_media_url_guard.sql` 실행 (실행 후 NOTICE 메시지에 "주의"가 나오면 알려 주기).
 - [ ] 다음(선택): 앱 아이콘·스플래시, 릴리스(서명) APK/AAB, 인증 메일 링크를 앱으로 여는 딥링크
 - [ ] 이후(선택): 캐릭터 순서 변경, 비밀번호 재설정
 

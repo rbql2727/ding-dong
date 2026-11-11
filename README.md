@@ -43,6 +43,7 @@ Supabase 대시보드 → 프로젝트 선택 → **Project Settings → API** (
 4. `supabase/migrations/20261112000001_profiles_backfill.sql`
 5. `supabase/migrations/20261113000001_sharing_security.sql`
 6. `supabase/migrations/20261114000001_log_body_limit.sql`
+7. `supabase/migrations/20261115000001_media_url_guard.sql`
 
 "Success" 가 나오면 성공. "already exists" 오류는 이미 적용된 것이니 다음 파일로 넘어가면 됩니다.
 

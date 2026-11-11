@@ -54,7 +54,9 @@ begin
   insert into public.characters (id, wiki_id, name, visibility) values (v_char, v_wiki, '테스트캐릭', 'private');
   insert into public.characters (id, wiki_id, name, visibility) values (v_secret, v_wiki, '비밀캐릭', 'private');
   insert into public.character_fields (character_id, label, content) values (v_char, '성격', '비밀');
-  insert into public.character_images (character_id, image_url, thumb_url) values (v_char, 'x', 'y');
+  insert into public.character_images (character_id, image_url, thumb_url) values (v_char,
+    'https://abc.supabase.co/storage/v1/object/public/media/' || v_a || '/wikis/' || v_wiki || '/characters/' || v_char || '/0.webp',
+    'https://abc.supabase.co/storage/v1/object/public/media/' || v_a || '/wikis/' || v_wiki || '/characters/' || v_char || '/0_thumb.webp');
   insert into public.character_logs (character_id, title, body) values (v_char, '테스트 로그', '비밀 본문');
   insert into public.character_logs (character_id, title, body) values (v_secret, '비밀캐릭 로그', '비밀');
   select public.get_share_token(v_wiki) into v_token;
@@ -267,6 +269,45 @@ begin
   exception when insufficient_privilege then ok := true;
   end;
   insert into t4_result (시나리오, 항목, 통과) values ('전체 공개', '로그인 안 하면 탐색도 불가', ok);
+
+  -- ===================== 이미지 주소 칸 보호 (S1, 7번 마이그레이션) =====================
+  perform set_config('role', 'authenticated', true);
+  perform set_config('request.jwt.claims', json_build_object('sub', v_a, 'role', 'authenticated')::text, true);
+  perform set_config('request.jwt.claim.sub', v_a::text, true);
+  ok := false;
+  begin
+    update public.profiles set avatar_url = 'https://evil.example/track.gif' where id = v_a;
+  exception when check_violation then ok := true;
+  end;
+  insert into t4_result (시나리오, 항목, 통과) values ('이미지 주소', '프로필 사진에 다른 사이트 주소 저장 불가', ok);
+  ok := false;
+  begin
+    update public.profiles set avatar_url = 'https://abc.supabase.co/storage/v1/object/public/media/' || v_b || '/avatar/x.webp' where id = v_a;
+  exception when check_violation then ok := true;
+  end;
+  insert into t4_result (시나리오, 항목, 통과) values ('이미지 주소', '프로필 사진에 남의 폴더 주소 저장 불가', ok);
+  ok := false;
+  begin
+    update public.wikis set cover_url = 'https://evil.example/c.png' where id = v_wiki;
+  exception when check_violation then ok := true;
+  end;
+  insert into t4_result (시나리오, 항목, 통과) values ('이미지 주소', '위키 표지에 다른 사이트 주소 저장 불가', ok);
+  ok := false;
+  begin
+    insert into public.character_images (character_id, image_url, thumb_url)
+    values (v_char, 'https://evil.example/a.png', 'https://evil.example/a.png');
+  exception when check_violation then ok := true;
+  end;
+  insert into t4_result (시나리오, 항목, 통과) values ('이미지 주소', '캐릭터 이미지에 다른 사이트 주소 저장 불가', ok);
+  ok := true;
+  begin
+    update public.wikis set cover_url = 'https://abc.supabase.co/storage/v1/object/public/media/' || v_a || '/wikis/' || v_wiki || '/cover-1.webp' where id = v_wiki;
+    insert into public.character_images (character_id, image_url, thumb_url) values (v_char,
+      'https://abc.supabase.co/storage/v1/object/public/media/' || v_a || '/wikis/' || v_wiki || '/characters/' || v_char || '/1.webp',
+      'https://abc.supabase.co/storage/v1/object/public/media/' || v_a || '/wikis/' || v_wiki || '/characters/' || v_char || '/1_thumb.webp');
+  exception when check_violation then ok := false;
+  end;
+  insert into t4_result (시나리오, 항목, 통과) values ('이미지 주소', '앱이 만드는 정상 주소는 저장됨', ok);
 
   -- ===================== 정리 =====================
   reset role;
