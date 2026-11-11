@@ -44,19 +44,6 @@ export function ExplorePage() {
   )
 }
 
-export function MyWikisPage() {
-  return (
-    <>
-      <PageHeader title="내 위키" />
-      <EmptyState
-        icon={<BookIcon className="size-8" />}
-        title="아직 만든 위키가 없어요"
-        description="다음 업데이트에서 위키를 만들 수 있어요."
-      />
-    </>
-  )
-}
-
 export function NotificationsPage() {
   return (
     <>

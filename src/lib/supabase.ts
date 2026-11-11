@@ -11,6 +11,9 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined
 
+/** 프로젝트 주소 (이미지 주소가 우리 Storage 것인지 확인할 때 사용) */
+export const SUPABASE_URL = (supabaseUrl ?? '').replace(/\/+$/, '')
+
 /** .env 에 키가 제대로 들어 있는지 여부 */
 export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey)
 

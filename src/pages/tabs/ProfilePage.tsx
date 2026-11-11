@@ -3,11 +3,9 @@ import { useAuth } from '../../auth/AuthContext'
 import { signOut } from '../../auth/authApi'
 import { CameraIcon } from '../../components/icons'
 import { Avatar, Button, ErrorText, PageHeader, Spinner, TextField } from '../../components/ui'
-import { resizeImage } from '../../lib/image'
-import { removeMediaByUrl, uploadMedia } from '../../lib/storage'
+import { checkImageFile } from '../../lib/image'
+import { IMAGE_SIZE, mediaPaths, removeMediaByUrl, uploadResizedImage } from '../../lib/storage'
 import { supabase } from '../../lib/supabase'
-
-const MAX_UPLOAD_BYTES = 10 * 1024 * 1024 // 원본 10MB 까지
 
 export function ProfilePage() {
   const { user, profile, refreshProfile } = useAuth()
@@ -53,14 +51,13 @@ export function ProfilePage() {
     e.target.value = '' // 같은 파일을 다시 골라도 동작하게
     if (!file || !user) return
     setError('')
-    if (!file.type.startsWith('image/')) return setError('이미지 파일만 올릴 수 있어요.')
-    if (file.size > MAX_UPLOAD_BYTES) return setError('10MB 이하의 이미지만 올릴 수 있어요.')
+    const problem = checkImageFile(file)
+    if (problem) return setError(problem)
 
     setUploading(true)
     try {
       // 256px 정사각형으로 줄여서 올림
-      const { blob, ext } = await resizeImage(file, { maxSize: 256, square: true })
-      const url = await uploadMedia(`${user.id}/avatar/${crypto.randomUUID()}.${ext}`, blob)
+      const url = await uploadResizedImage(file, mediaPaths.avatar(user.id), IMAGE_SIZE.avatar, { square: true })
 
       const oldUrl = profile?.avatar_url
       const { error } = await supabase.from('profiles').update({ avatar_url: url }).eq('id', user.id)

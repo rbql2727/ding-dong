@@ -1,16 +1,24 @@
 import { Route, Routes } from 'react-router-dom'
 import { ProtectedRoute, PublicOnlyRoute } from './auth/routes'
 import { AppLayout } from './components/AppLayout'
+import { SubLayout } from './components/SubLayout'
 import { isSupabaseConfigured } from './lib/supabase'
 import { LoginPage } from './pages/auth/LoginPage'
 import { SignupPage } from './pages/auth/SignupPage'
+import { CharacterDetailPage } from './pages/character/CharacterDetailPage'
+import { CharacterFormPage } from './pages/character/CharacterFormPage'
+import { LogDetailPage, LogEditorPage } from './pages/log/LogPages'
 import { ProfilePage } from './pages/tabs/ProfilePage'
-import { ExplorePage, HomePage, MyWikisPage, NotFoundPage, NotificationsPage } from './pages/tabs/TabPages'
+import { ExplorePage, HomePage, NotFoundPage, NotificationsPage } from './pages/tabs/TabPages'
+import { MyWikisPage } from './pages/wiki/MyWikisPage'
+import { WikiCreatePage, WikiSettingsPage } from './pages/wiki/WikiFormPage'
+import { WikiHomePage } from './pages/wiki/WikiHomePage'
 
 /**
  * 화면 주소(라우트) 목록
- *  - /login, /signup      : 로그인 안 한 사람만
- *  - 나머지 탭 화면        : 로그인한 사람만 (안 했으면 /login 으로)
+ *  - /login, /signup                    : 로그인 안 한 사람만
+ *  - 하단 탭 화면 (/, /explore, /wikis…) : 로그인 필요, 하단 탭 있음
+ *  - 위키·캐릭터·로그 화면 (/w/…)        : 로그인 필요, 하단 탭 없음 (뒤로 가기)
  */
 function App() {
   if (!isSupabaseConfigured) return <SetupNotice />
@@ -29,6 +37,18 @@ function App() {
           <Route path="/wikis" element={<MyWikisPage />} />
           <Route path="/notifications" element={<NotificationsPage />} />
           <Route path="/profile" element={<ProfilePage />} />
+        </Route>
+
+        <Route element={<SubLayout />}>
+          <Route path="/wikis/new" element={<WikiCreatePage />} />
+          <Route path="/w/:wikiId" element={<WikiHomePage />} />
+          <Route path="/w/:wikiId/settings" element={<WikiSettingsPage />} />
+          <Route path="/w/:wikiId/c/new" element={<CharacterFormPage />} />
+          <Route path="/w/:wikiId/c/:charId" element={<CharacterDetailPage />} />
+          <Route path="/w/:wikiId/c/:charId/edit" element={<CharacterFormPage />} />
+          <Route path="/w/:wikiId/c/:charId/logs/new" element={<LogEditorPage />} />
+          <Route path="/w/:wikiId/c/:charId/logs/:logId" element={<LogDetailPage />} />
+          <Route path="/w/:wikiId/c/:charId/logs/:logId/edit" element={<LogEditorPage />} />
         </Route>
       </Route>
 
