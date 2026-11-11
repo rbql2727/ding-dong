@@ -10,7 +10,7 @@ export function HomePage() {
   return (
     <>
       <PageHeader title="홈" />
-      <section className="px-4 pt-5">
+      <section className="px-4 pt-5 lg:px-6 lg:pt-6">
         <Link
           to="/profile"
           className="px-window flex items-center gap-3 p-5"

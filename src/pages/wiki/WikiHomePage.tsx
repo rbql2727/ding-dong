@@ -14,6 +14,7 @@ import { visibilityLabel } from '../../lib/visibility'
 import { useLoad } from '../../lib/useLoad'
 import { MediaImg } from '../../components/MediaImg'
 import { LockedWikiView } from './LockedWikiView'
+import { COVER_ASPECT } from '../../lib/storage'
 
 async function loadWikiHome(wikiId: string, isOwner: boolean) {
   const [wiki, rooms, characters, pendingCount] = await Promise.all([
@@ -104,7 +105,7 @@ function WikiContent({ wikiId, preview }: { wikiId: string; preview: WikiPreview
     <div style={themeStyle(wiki.theme_color)} className="pb-24">
       {/* 표지 + 제목 */}
       <section className="relative">
-        <div className="relative h-44 border-b-3 border-ink bg-(--wiki)">
+        <div style={{ aspectRatio: COVER_ASPECT }} className="relative max-h-96 w-full border-b-3 border-ink bg-(--wiki)">
           {wiki.cover_url && <MediaImg src={wiki.cover_url} alt="" decoding="async" className="size-full object-cover" />}
           <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/10" />
         </div>
@@ -119,7 +120,7 @@ function WikiContent({ wikiId, preview }: { wikiId: string; preview: WikiPreview
             )
           }
         />
-        <div className="px-4 pt-4">
+        <div className="px-4 pt-4 lg:px-6 lg:pt-6">
           <h1 className="font-title text-2xl break-words text-gray-900">{wiki.name}</h1>
           {wiki.description && <p className="mt-2 text-sm leading-relaxed whitespace-pre-wrap text-gray-600">{wiki.description}</p>}
           <p className="mt-2 text-xs text-gray-400">
@@ -176,7 +177,7 @@ function WikiContent({ wikiId, preview }: { wikiId: string; preview: WikiPreview
       </div>
 
       {isOwner && (
-        <div className="mt-8 px-4">
+        <div className="mt-8 px-4 lg:px-6">
           <button
             type="button"
             onClick={() => setDialog({ type: 'add' })}
@@ -285,7 +286,7 @@ function RoomSection({
   const newLink = `/w/${wikiId}/c/new${roomId ? `?room=${roomId}` : ''}`
   return (
     <section>
-      <div className="mb-3 flex items-center gap-2 px-4">
+      <div className="mb-3 flex items-center gap-2 px-4 lg:px-6">
         <h2 className="px-label min-w-0 truncate text-base">{title}</h2>
         <span className="ml-1 flex-1 text-sm text-accent italic">{characters.length}</span>
         {onMenu && (
@@ -298,7 +299,7 @@ function RoomSection({
       {characters.length === 0 && !isOwner ? (
         <p className="px-4 text-sm text-gray-400">아직 캐릭터가 없어요.</p>
       ) : (
-        <ul className="grid grid-cols-2 gap-3 px-4 min-[480px]:grid-cols-3">
+        <ul className="grid grid-cols-2 gap-3 px-4 min-[480px]:grid-cols-3 lg:grid-cols-4 lg:gap-4 lg:px-6 xl:grid-cols-5">
           {characters.map((c) => (
             <li key={c.id}>
               <Link to={`/w/${wikiId}/c/${c.id}`} className="block active:opacity-80">

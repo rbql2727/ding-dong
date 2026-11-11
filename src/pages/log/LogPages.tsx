@@ -66,7 +66,7 @@ export function LogDetailPage() {
           )
         }
       />
-      <article className="px-4 pt-5">
+      <article className="px-4 pt-5 lg:mx-auto lg:max-w-3xl lg:px-8 lg:pt-8">
         <h1 className="font-title text-xl break-words text-gray-900">{log.title}</h1>
         <p className="mt-1 text-xs text-gray-400">
           {formatDateTime(log.created_at)}
@@ -178,7 +178,7 @@ function LogEditForm({ wiki, charId, log, onBack }: { wiki: Wiki; charId: string
           </Button>
         }
       />
-      <form id="log-form" onSubmit={handleSubmit} className="space-y-3 px-4 pt-4 pb-10">
+      <form id="log-form" onSubmit={handleSubmit} className="space-y-3 px-4 pt-4 pb-10 lg:mx-auto lg:max-w-3xl lg:px-8 lg:pt-8">
         <input
           aria-label="제목"
           value={title}

@@ -62,3 +62,40 @@ export async function resizeImage(
 function toBlob(canvas: HTMLCanvasElement, type: string, quality: number) {
   return new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, type, quality))
 }
+
+/** 자르기 창에서 고른 영역 (원본 사진 픽셀 기준) */
+export type CropArea = { x: number; y: number; width: number; height: number }
+
+/**
+ * 사진에서 고른 영역만 잘라 정해진 크기로 만들기 (프로필 사진·위키 표지)
+ * 자르기 창(react-easy-crop)이 알려 준 영역을 그대로 씀 → 화면에서 본 그대로 저장됨
+ */
+export async function cropToBlob(
+  file: File,
+  area: CropArea,
+  outWidth: number,
+  outHeight: number,
+  quality = 0.88,
+): Promise<ResizedImage> {
+  let bitmap: ImageBitmap
+  try {
+    bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' })
+  } catch {
+    throw new Error('이 형식의 이미지는 올릴 수 없어요. JPG나 PNG로 바꿔서 올려 주세요.')
+  }
+  // 원본보다 크게 늘리지는 않음 (작은 사진은 그 크기 그대로)
+  const canvas = document.createElement('canvas')
+  canvas.width = Math.max(1, Math.round(Math.min(outWidth, area.width)))
+  canvas.height = Math.max(1, Math.round(canvas.width * (outHeight / outWidth)))
+  const ctx = canvas.getContext('2d')
+  if (!ctx) throw new Error('이미지를 처리할 수 없어요.')
+  ctx.imageSmoothingQuality = 'high'
+  ctx.drawImage(bitmap, area.x, area.y, area.width, area.height, 0, 0, canvas.width, canvas.height)
+  bitmap.close()
+
+  const webp = await toBlob(canvas, 'image/webp', quality)
+  if (webp && webp.type === 'image/webp') return { blob: webp, ext: 'webp' }
+  const jpg = await toBlob(canvas, 'image/jpeg', quality)
+  if (!jpg) throw new Error('이미지를 처리할 수 없어요.')
+  return { blob: jpg, ext: 'jpg' }
+}

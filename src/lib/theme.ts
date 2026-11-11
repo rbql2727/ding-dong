@@ -2,6 +2,7 @@ import type { CSSProperties } from 'react'
 
 /** 위키 테마 색 고르기용 기본 색 */
 export const THEME_COLORS = [
+  '#e66b2c', // 레트로 주황 (기본)
   '#6366f1', // 남보라
   '#8b5cf6', // 보라
   '#ec4899', // 분홍
@@ -12,7 +13,7 @@ export const THEME_COLORS = [
   '#14b8a6', // 청록
   '#0ea5e9', // 하늘
   '#64748b', // 회색
-  '#1f2937', // 먹색
+  '#1f2542', // 남색
 ]
 
 export const DEFAULT_THEME_COLOR = THEME_COLORS[0]

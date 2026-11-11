@@ -6,11 +6,13 @@ import { createWiki, deleteWiki, getWiki, setAllCharactersVisibility, updateWiki
 import { ConfirmModal } from '../../components/Modal'
 import { ImageIcon } from '../../components/icons'
 import { BackHeader, Button, ErrorScreen, ErrorText, InlineLoading, TextArea, TextField } from '../../components/ui'
-import { checkImageFile } from '../../lib/image'
 import { DEFAULT_THEME_COLOR, THEME_COLORS, themeStyle } from '../../lib/theme'
 import type { Visibility, Wiki } from '../../lib/types'
 import { useLoad } from '../../lib/useLoad'
 import { MediaImg } from '../../components/MediaImg'
+import { ImageCropModal } from '../../components/ImageCropModal'
+import { COVER_ASPECT, IMAGE_SIZE } from '../../lib/storage'
+import { useCropPicker } from '../../lib/useCropPicker'
 import { VisibilityPicker } from '../../components/VisibilityPicker'
 
 /** 위키 만들기 (/wikis/new) */
@@ -52,8 +54,9 @@ function WikiForm({ wiki, onBack }: { wiki?: Wiki; onBack: () => void }) {
   // 공개 범위를 바꿀 때 캐릭터들에도 같이 적용할지
   const [applyToCharacters, setApplyToCharacters] = useState(true)
   const visibilityChanged = !!wiki && wiki.visibility !== visibility
-  // undefined = 그대로, null = 지우기, { file, url } = 새로 고름 (url 은 미리보기용)
-  const [cover, setCover] = useState<{ file: File; url: string } | null | undefined>(undefined)
+  // undefined = 그대로, null = 지우기, { file, url, source } = 새로 고름
+  //   file = 잘라 낸 표지, url = 미리보기, source = 원래 사진 (위치 다시 맞추기용)
+  const [cover, setCover] = useState<{ file: File; url: string; source: File } | null | undefined>(undefined)
   const previewUrlRef = useRef<string | null>(null)
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
@@ -65,7 +68,7 @@ function WikiForm({ wiki, onBack }: { wiki?: Wiki; onBack: () => void }) {
     if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current)
   }, [])
 
-  function changeCover(next: { file: File; url: string } | null) {
+  function changeCover(next: { file: File; url: string; source: File } | null) {
     if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current)
     previewUrlRef.current = next?.url ?? null
     setCover(next)
@@ -73,14 +76,23 @@ function WikiForm({ wiki, onBack }: { wiki?: Wiki; onBack: () => void }) {
 
   const shownCover = cover === undefined ? wiki?.cover_url ?? null : cover?.url ?? null
 
+  // 사진 고르기 → 자르기 창(위치·확대 맞추기) → 적용하면 미리보기에 반영 (실제 업로드는 저장할 때)
+  const cropper = useCropPicker(setError)
+
   function handlePickCover(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     e.target.value = ''
     if (!file) return
-    const problem = checkImageFile(file)
-    if (problem) return setError(problem)
     setError('')
-    changeCover({ file, url: URL.createObjectURL(file) })
+    cropper.pick(file)
+  }
+
+  function applyCroppedCover(blob: Blob) {
+    const source = cropper.target?.file
+    if (!source) return
+    const file = new File([blob], blob.type === 'image/webp' ? 'cover.webp' : 'cover.jpg', { type: blob.type })
+    changeCover({ file, url: URL.createObjectURL(blob), source })
+    cropper.close()
   }
 
   async function handleSubmit(e: FormEvent) {
@@ -110,14 +122,15 @@ function WikiForm({ wiki, onBack }: { wiki?: Wiki; onBack: () => void }) {
     <div style={themeStyle(themeColor)}>
       <BackHeader title={isNew ? '새 위키' : '위키 설정'} onBack={onBack} />
 
-      <form onSubmit={handleSubmit} className="space-y-6 px-4 pt-4 pb-28">
+      <form onSubmit={handleSubmit} className="space-y-6 px-4 pt-4 lg:mx-auto lg:max-w-2xl lg:px-8 lg:pt-8">
         {/* 표지 */}
         <div>
           <span className="mb-1.5 block text-sm font-medium text-gray-700">표지 이미지</span>
           <button
             type="button"
             onClick={() => fileInput.current?.click()}
-            className="relative flex h-40 w-full items-center justify-center overflow-hidden rounded-2xl bg-(--wiki) text-white/90"
+            style={{ aspectRatio: COVER_ASPECT }}
+            className="relative flex w-full items-center justify-center overflow-hidden border-3 border-ink bg-(--wiki) text-paper"
           >
             {shownCover ? (
               <MediaImg src={shownCover} alt="" className="absolute inset-0 size-full object-cover" />
@@ -129,8 +142,24 @@ function WikiForm({ wiki, onBack }: { wiki?: Wiki; onBack: () => void }) {
             )}
           </button>
           <input ref={fileInput} type="file" accept="image/*" className="hidden" onChange={handlePickCover} />
+          {cropper.target && (
+            <ImageCropModal
+              file={cropper.target.file}
+              src={cropper.target.src}
+              title="표지 맞추기"
+              aspect={COVER_ASPECT}
+              outputWidth={IMAGE_SIZE.cover}
+              onCancel={cropper.close}
+              onDone={applyCroppedCover}
+            />
+          )}
           {shownCover && (
             <div className="mt-2 flex gap-3 text-sm">
+              {cover?.source && (
+                <button type="button" className="font-bold text-accent" onClick={() => cropper.pick(cover.source)}>
+                  위치 다시 맞추기
+                </button>
+              )}
               <button type="button" className="text-gray-600" onClick={() => fileInput.current?.click()}>
                 다른 사진으로
               </button>
@@ -229,8 +258,8 @@ function WikiForm({ wiki, onBack }: { wiki?: Wiki; onBack: () => void }) {
         )}
 
         {/* 저장 버튼 (화면 아래 고정) */}
-        <div className="fixed inset-x-0 bottom-0 z-20 border-t-3 border-ink bg-paper px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
-          <div className="mx-auto max-w-md">
+        <div className="sticky bottom-0 z-20 -mx-4 border-t-3 border-ink bg-paper px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] lg:-mx-8 lg:px-8">
+          <div className="mx-auto max-w-2xl">
             <Button type="submit" variant="theme" loading={saving}>
               {isNew ? '위키 만들기' : '저장'}
             </Button>

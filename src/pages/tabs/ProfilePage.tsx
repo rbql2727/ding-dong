@@ -3,8 +3,9 @@ import { useAuth } from '../../auth/AuthContext'
 import { signOut } from '../../auth/authApi'
 import { CameraIcon } from '../../components/icons'
 import { Avatar, Button, ErrorText, PageHeader, Spinner, TextField } from '../../components/ui'
-import { checkImageFile } from '../../lib/image'
-import { IMAGE_SIZE, mediaPaths, removeMediaByUrl, uploadResizedImage } from '../../lib/storage'
+import { ImageCropModal } from '../../components/ImageCropModal'
+import { IMAGE_SIZE, mediaPaths, removeMediaByUrl, uploadBlob } from '../../lib/storage'
+import { useCropPicker } from '../../lib/useCropPicker'
 import { supabase } from '../../lib/supabase'
 
 export function ProfilePage() {
@@ -26,6 +27,9 @@ export function ProfilePage() {
     return () => clearTimeout(t)
   }, [notice])
 
+  // 사진 고르기 → 자르기 창 → 적용하면 업로드
+  const cropper = useCropPicker(setError)
+
   if (!user) return null
 
   const trimmed = nickname.trim()
@@ -46,19 +50,20 @@ export function ProfilePage() {
     setNotice('닉네임을 바꿨어요.')
   }
 
-  async function handleAvatarChange(e: ChangeEvent<HTMLInputElement>) {
+  function handleAvatarChange(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     e.target.value = '' // 같은 파일을 다시 골라도 동작하게
-    if (!file || !user) return
+    if (!file) return
     setError('')
-    const problem = checkImageFile(file)
-    if (problem) return setError(problem)
+    cropper.pick(file)
+  }
 
+  async function uploadCroppedAvatar(blob: Blob) {
+    if (!user) return
+    cropper.close()
     setUploading(true)
     try {
-      // 256px 정사각형으로 줄여서 올림
-      const url = await uploadResizedImage(file, mediaPaths.avatar(user.id), IMAGE_SIZE.avatar, { square: true })
-
+      const url = await uploadBlob(blob, mediaPaths.avatar(user.id))
       const oldUrl = profile?.avatar_url
       const { error } = await supabase.from('profiles').update({ avatar_url: url }).eq('id', user.id)
       if (error) {
@@ -104,7 +109,7 @@ export function ProfilePage() {
     <>
       <PageHeader title="프로필" />
 
-      <div className="space-y-8 px-4 py-6">
+      <div className="space-y-8 px-4 py-6 lg:mx-auto lg:max-w-xl lg:py-10">
         {/* 프로필 사진 */}
         <section className="flex flex-col items-center gap-3">
           <button
@@ -120,6 +125,17 @@ export function ProfilePage() {
             </span>
           </button>
           <input ref={fileInput} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
+          {cropper.target && (
+            <ImageCropModal
+              file={cropper.target.file}
+              src={cropper.target.src}
+              title="프로필 사진 맞추기"
+              aspect={1}
+              outputWidth={IMAGE_SIZE.avatar}
+              onCancel={cropper.close}
+              onDone={uploadCroppedAvatar}
+            />
+          )}
           {profile?.avatar_url && (
             <button
               type="button"

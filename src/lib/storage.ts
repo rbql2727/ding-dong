@@ -15,9 +15,12 @@ import { MEDIA_BUCKET, SUPABASE_URL, supabase } from './supabase'
 export const IMAGE_SIZE = {
   original: 1600, // 상세 화면용 원본
   thumb: 400, // 목록용 썸네일
-  cover: 1200, // 위키 표지
+  cover: 1200, // 위키 표지 (가로)
   avatar: 256, // 프로필 사진 (정사각형)
 }
+
+/** 위키 표지 비율 (가로 8 : 세로 3). 화면의 표지 칸도 모두 이 비율 → 자른 그대로 보임 */
+export const COVER_ASPECT = 8 / 3
 
 export const mediaPaths = {
   avatar: (uid: string) => `${uid}/avatar/${crypto.randomUUID()}`,
@@ -54,6 +57,12 @@ export async function uploadResizedImage(
   options: { square?: boolean; quality?: number } = {},
 ): Promise<string> {
   const { blob, ext } = await resizeImage(file, { maxSize, ...options })
+  return uploadMedia(`${basePath}.${ext}`, blob)
+}
+
+/** 이미 만들어 둔 이미지(잘라 낸 사진 등) 올리기. basePath 에 확장자가 붙습니다. */
+export async function uploadBlob(blob: Blob, basePath: string): Promise<string> {
+  const ext = blob.type === 'image/webp' ? 'webp' : blob.type === 'image/png' ? 'png' : 'jpg'
   return uploadMedia(`${basePath}.${ext}`, blob)
 }
 

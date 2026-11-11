@@ -42,8 +42,8 @@ src/
     logs.ts              목록(최신순), 조회, 생성, 수정, 삭제, 본문 이미지 업로드
     sharing.ts           위키 미리보기, 탐색, 공유 링크(토큰 조회·재발급·열기), 열람 요청(보내기·취소·승인·거절·철회)
   components/
-    AppLayout.tsx        하단 탭 5개(홈/탐색/내 위키/알림/프로필)
-    SubLayout.tsx        하위 화면용 (탭 없음)
+    AppLayout.tsx        공통 틀: AppLayout(탭 화면) / SubLayout(하위 화면). 폰=아래 탭, 넓은 화면(lg 1024px+)=왼쪽 메뉴
+    ImageCropModal.tsx   사진 자르기 창 (끌기·두 손가락/휠/막대 확대) — 프로필 사진·위키 표지
     ui.tsx               Button(primary/secondary/danger/dangerSolid/theme), TextField, TextArea, BackHeader, IconButton, EmptyState, Avatar 등
     Modal.tsx            Modal, PromptModal, ConfirmModal, ActionSheet (아래에서 올라오는 창)
     ImageViewer.tsx      이미지 크게 보기 (원본)
@@ -62,7 +62,8 @@ src/
     signedUrl.ts         서명 주소 일괄 요청 + 메모리 캐시(30분), 로그아웃 시 비움
     useMediaUrl.ts       저장된 주소 → 화면용 주소 훅
     visibility.ts        공개 범위 문구
-    image.ts             브라우저에서 이미지 줄이기(webp, 실패 시 jpg), checkImageFile
+    image.ts             브라우저에서 이미지 줄이기(webp, 실패 시 jpg), cropToBlob(자른 영역 → 이미지), checkImageFile
+    useCropPicker.ts     사진 고르기 → 자르기 창 열기 상태 관리 (미리보기 주소 정리 포함)
     logDocCore.ts        ★ 로그 문서 규칙: 허용 목록 정리(sanitizeDoc), 예전 형식 변환, 미리보기, 이미지 추출, 글꼴·색 목록
     richText.ts          logDocCore 에 "우리 Storage 이미지만" 규칙을 연결 (safeDocFromBody, extractImageUrls, toPreview)
     useLoad.ts           데이터 불러오기 훅 (data/loading/error/reload/setData)
@@ -159,6 +160,8 @@ src/assets/fonts/        갈무리 글꼴 + 라이선스(SIL OFL)
 - 새 색 이름: `ink`(남색), `night`(배경), `paper`(크림), `accent`(주황), `dim`(흐린 글자). 글꼴: `font-title`(갈무리14), 기본 갈무리11.
 - 재사용 클래스: `px-window`(창), `px-titlebar`(남색 제목 줄 + 주황 디더), `px-winbtn`(창 버튼), `px-btn`(눌리는 버튼), `px-input`(입력칸), `px-label`(이름표), `px-dashed`, `app-frame`.
 - 로그 본문 스타일은 `.log-content` (읽기 편하게 프리텐다드 기본).
+- **반응형**: 폰은 세로 한 줄(max-w-md) + 아래 탭. **넓은 화면(lg, 가로 1024px 이상)은 가로형**: 틀 max-w-6xl, 왼쪽 메뉴(`SideNav`), 목록은 여러 칸(위키 2~3칸, 캐릭터 4~5칸, 탐색 2칸), 캐릭터 상세는 2단(왼쪽 이미지 고정 / 오른쪽 정보·탭), 글·설정 화면은 읽기 좋은 폭(max-w-2xl~3xl) 가운데. 저장 막대는 화면 고정 대신 폼 끝에 붙어 다님(sticky).
+- 위키 표지 비율은 **8:3 고정**(`COVER_ASPECT`). 표지가 보이는 모든 칸이 이 비율이라 자르기 창에서 맞춘 그대로 보임. 프로필 사진은 1:1.
 
 ## 개발 명령
 - `npm install` 패키지 설치
@@ -178,6 +181,8 @@ src/assets/fonts/        갈무리 글꼴 + 라이선스(SIL OFL)
 - [x] **5단계 디자인·편집기**: 레트로 픽셀 디자인(남색 별밤 + 크림 창 + 주황, 갈무리 글꼴) 전체 적용. 로그 편집기를 툴바 방식(TipTap)으로 교체, 글꼴 5종. 로그 본문 JSON 저장 + 허용 목록 정리, 예전 글 자동 변환. 로그 화면은 필요할 때만 불러옴(lazy).
   - 검증: `npm test` 21개 통과(javascript 링크·CSS 주입·외부 이미지·경로 조작 차단 등), 실제 브라우저에서 툴바 조작 → 저장되는 문서 확인(굵게·색·글꼴·정렬·표·예전 이미지 유지), 보기 화면에서 위험 링크 제거·외부 이미지 요청 0건 확인. 빌드·lint 통과.
   - 사용자 할 일: `20261114000001_log_body_limit.sql` 실행.
+- [x] **5-2 사진 맞추기·가로형**: 프로필 사진·위키 표지를 고를 때 자르기 창(끌어서 위치, 두 손가락·휠·막대로 확대/축소), 표지는 저장 전 "위치 다시 맞추기" 가능. 넓은 화면 가로형 레이아웃(왼쪽 메뉴 + 넓은 내용, 여러 칸 목록, 캐릭터 상세 2단). 기본 테마 색 주황.
+  - 검증: 브라우저에서 사진 끌기·확대 후 업로드된 파일이 256×256이고 자르기 창에서 본 영역과 똑같은지 확인, 표지 8:3 미리보기 확인, 1440px 화면 캡처 확인. 빌드·lint 통과.
 - [ ] 다음: Capacitor 안드로이드 APK
 - [ ] 이후(선택): 캐릭터 순서 변경, 비밀번호 재설정
 
@@ -197,6 +202,8 @@ src/assets/fonts/        갈무리 글꼴 + 라이선스(SIL OFL)
 - (5단계) 로그 편집기를 툴바 방식으로 바꿈 → (3단계의 "긴 주소 한 줄" 문제 해결).
 - (5단계) 표·구분선·이미지를 넣을 때 고른 글자를 지우지 않도록 선택 끝에 넣음 (테스트 중 발견해서 고침).
 - (5단계) 제목 줄의 _ □ × 버튼은 꾸밈용(누를 수 없음). 하위 화면은 왼쪽 ◀ 버튼이 뒤로 가기.
+- (5-2) 사진 자르기는 react-easy-crop 사용. 자른 결과: 프로필 256×256, 표지 1200×450 (원본이 작으면 원본 크기 그대로, 늘리지 않음). 캐릭터 이미지는 자르지 않고 원본 비율 그대로 저장(카드에서만 3:4로 보임).
+- (5-2) 이미 저장된 표지는 원본을 보관하지 않으므로 "다시 맞추기"는 새로 고른 사진에만. 바꾸려면 사진을 다시 고르면 됨.
 - (3단계) 캐릭터 순서 변경 UI는 아직 없음 (방 안에서는 만든 순서).
 - (3단계) JS 번들이 500kB를 넘어 빌드 경고가 남. 나중에 화면별로 나눠 불러오기(lazy) 고려.
 - (4단계) "전체 공개"도 로그인 필요 (사용자 요구). 비로그인 열람 화면은 만들지 않음.

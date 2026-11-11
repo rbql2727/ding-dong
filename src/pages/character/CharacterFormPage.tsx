@@ -207,7 +207,7 @@ function CharacterForm({
     <div style={themeStyle(wiki.theme_color)}>
       <BackHeader title={isNew ? '새 캐릭터' : '캐릭터 편집'} onBack={onBack} />
 
-      <form onSubmit={handleSubmit} className="space-y-8 px-4 pt-4 pb-28">
+      <form onSubmit={handleSubmit} className="space-y-8 px-4 pt-4 lg:mx-auto lg:max-w-2xl lg:px-8 lg:pt-8">
         {/* 기본 정보 */}
         <section className="space-y-4">
           <TextField label="이름" required maxLength={50} value={name} onChange={(e) => setName(e.target.value)} placeholder="캐릭터 이름" />
@@ -243,7 +243,7 @@ function CharacterForm({
               {images.length}/{MAX_IMAGES} · ★ 대표 이미지
             </span>
           </div>
-          <ul className="grid grid-cols-3 gap-2">
+          <ul className="grid grid-cols-3 gap-2 sm:grid-cols-4">
             {images.map((d, i) => {
               const src = d.kind === 'existing' ? d.image.thumb_url : d.previewUrl
               const isCover = d.key === effectiveCoverKey
@@ -389,8 +389,8 @@ function CharacterForm({
         )}
 
         {/* 저장 버튼 (화면 아래 고정) */}
-        <div className="fixed inset-x-0 bottom-0 z-20 border-t-3 border-ink bg-paper px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
-          <div className="mx-auto max-w-md">
+        <div className="sticky bottom-0 z-20 -mx-4 border-t-3 border-ink bg-paper px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] lg:-mx-8 lg:px-8">
+          <div className="mx-auto max-w-2xl">
             <Button type="submit" variant="theme" loading={saving}>
               {saving ? progress : isNew ? '캐릭터 만들기' : '저장'}
             </Button>

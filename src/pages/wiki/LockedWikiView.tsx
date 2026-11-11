@@ -7,6 +7,7 @@ import { BackIcon } from '../../components/icons'
 import { Button, ErrorText, IconButton } from '../../components/ui'
 import { themeStyle } from '../../lib/theme'
 import type { WikiPreview } from '../../lib/types'
+import { COVER_ASPECT } from '../../lib/storage'
 
 /**
  * 아직 볼 권한이 없는 "승인한 사람만" 위키: 제목·표지·주인만 보여 주고 열람 요청을 받음.
@@ -36,7 +37,7 @@ export function LockedWikiView({ preview, onChanged }: { preview: WikiPreview; o
   return (
     <div style={themeStyle(preview.theme_color)} className="pb-16">
       <section className="relative">
-        <div className="relative h-44 border-b-3 border-ink bg-(--wiki)">
+        <div style={{ aspectRatio: COVER_ASPECT }} className="relative max-h-96 w-full border-b-3 border-ink bg-(--wiki)">
           {preview.cover_url && <MediaImg src={preview.cover_url} alt="" decoding="async" className="size-full object-cover" />}
           <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/10" />
         </div>
@@ -47,12 +48,12 @@ export function LockedWikiView({ preview, onChanged }: { preview: WikiPreview; o
         </div>
       </section>
 
-      <div className="px-4 pt-4">
+      <div className="px-4 pt-4 lg:px-6 lg:pt-6">
         <h1 className="font-title text-2xl break-words text-gray-900">{preview.name}</h1>
         <p className="mt-1 text-sm text-gray-500">{preview.owner_nickname}</p>
       </div>
 
-      <div className="px-window mx-4 mt-8 px-5 py-8 text-center">
+      <div className="px-window mx-4 mt-8 px-5 py-8 text-center lg:mx-auto lg:max-w-lg">
         <div className="mx-auto mb-3 flex size-14 items-center justify-center border-3 border-ink bg-paper text-2xl shadow-sm" aria-hidden>
           🔒
         </div>

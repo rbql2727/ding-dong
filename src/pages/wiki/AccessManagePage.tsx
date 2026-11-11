@@ -147,7 +147,7 @@ export function AccessManagePage() {
 
 function Section({ title, count, empty, children }: { title: string; count: number; empty?: string; children: ReactNode }) {
   return (
-    <section className="mt-6 px-4">
+    <section className="mt-6 px-4 lg:mx-auto lg:max-w-2xl lg:px-8">
       <h2 className="mb-2 flex items-baseline gap-2 font-bold">
         {title}
         <span className="text-sm font-normal text-gray-400">{count}</span>

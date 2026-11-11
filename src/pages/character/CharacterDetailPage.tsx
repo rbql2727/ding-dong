@@ -60,9 +60,13 @@ export function CharacterDetailPage() {
         }
       />
 
-      <Gallery key={charId} full={full} />
+      <div className="lg:grid lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:items-start lg:gap-8 lg:px-6 lg:pt-6">
+      <div className="lg:sticky lg:top-[calc(4.5rem+env(safe-area-inset-top))]">
+        <Gallery key={charId} full={full} />
+      </div>
 
-      <section className="px-4 pt-5">
+      <div className="min-w-0">
+      <section className="px-4 pt-5 lg:px-0 lg:pt-0">
         {room && (
           <span className="mb-2 inline-block bg-ink px-2.5 py-1 text-xs text-paper">{room.name}</span>
         )}
@@ -71,7 +75,7 @@ export function CharacterDetailPage() {
       </section>
 
       {/* 탭 */}
-      <div role="tablist" className="sticky top-[calc(3.5rem+env(safe-area-inset-top))] z-[5] mt-5 flex gap-1 border-b-3 border-ink bg-paper px-4 pt-2">
+      <div role="tablist" className="sticky top-[calc(3.5rem+env(safe-area-inset-top))] z-[5] mt-5 flex gap-1 border-b-3 border-ink bg-paper px-4 pt-2 lg:px-0">
         {(
           [
             ['profile', '프로필'],
@@ -98,6 +102,8 @@ export function CharacterDetailPage() {
       ) : (
         <LogsTab wikiId={wikiId} charId={charId} isOwner={isOwner} />
       )}
+      </div>
+      </div>
     </div>
   )
 }
@@ -178,7 +184,7 @@ function ProfileTab({ full, isOwner, editLink }: { full: CharacterFull; isOwner:
     )
   }
   return (
-    <dl className="divide-y divide-gray-100 px-4">
+    <dl className="divide-y divide-gray-100 px-4 lg:px-0">
       {full.fields.map((f) => (
         <div key={f.id} className="py-4">
           <dt className="mb-1 text-sm font-bold text-(--wiki)">{f.label}</dt>
@@ -194,7 +200,7 @@ function LogsTab({ wikiId, charId, isOwner }: { wikiId: string; charId: string; 
   const base = `/w/${wikiId}/c/${charId}/logs`
 
   return (
-    <section className="px-4 pt-4">
+    <section className="px-4 pt-4 lg:px-0">
       {isOwner && (
         <Link
           to={`${base}/new`}

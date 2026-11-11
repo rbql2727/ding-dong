@@ -42,7 +42,7 @@ export function ExplorePage() {
   return (
     <>
       <PageHeader title="탐색" />
-      <div className="sticky top-[calc(3.5rem+env(safe-area-inset-top))] z-[5] bg-paper px-4 pt-3 pb-2">
+      <div className="sticky top-[calc(3.5rem+env(safe-area-inset-top))] z-[5] bg-paper px-4 pt-3 pb-2 lg:px-6 lg:pt-5">
         <input
           type="search"
           value={input}
@@ -63,7 +63,7 @@ export function ExplorePage() {
         />
       )}
       {data && data.length > 0 && (
-        <ul className="space-y-3 px-4 py-2">
+        <ul className="grid gap-3 px-4 py-2 lg:grid-cols-2 lg:px-6">
           {data.map((w) => (
             <li key={w.id}>
               <ExploreCard wiki={w} />

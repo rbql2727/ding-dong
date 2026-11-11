@@ -6,6 +6,7 @@ import { EmptyState, ErrorScreen, InlineLoading, PageHeader } from '../../compon
 import { themeStyle } from '../../lib/theme'
 import { useLoad } from '../../lib/useLoad'
 import { MediaImg } from '../../components/MediaImg'
+import { COVER_ASPECT } from '../../lib/storage'
 
 export function MyWikisPage() {
   const { user } = useAuth()
@@ -47,7 +48,7 @@ export function MyWikisPage() {
       )}
 
       {wikis && wikis.length > 0 && (
-        <ul className="space-y-4 px-4 py-4">
+        <ul className="grid gap-4 px-4 py-4 sm:grid-cols-2 lg:px-6 lg:py-6 xl:grid-cols-3">
           {wikis.map((w) => (
             <li key={w.id}>
               <WikiCard wiki={w} />
@@ -69,7 +70,7 @@ function WikiCard({ wiki }: { wiki: WikiWithCount }) {
       <div className="px-titlebar flex h-8 items-center px-2.5 text-sm">
         <span className="truncate">{wiki.name}.wiki</span>
       </div>
-      <div className="relative h-28 border-b-3 border-ink bg-(--wiki)">
+      <div style={{ aspectRatio: COVER_ASPECT }} className="relative border-b-3 border-ink bg-(--wiki)">
         {wiki.cover_url && (
           <MediaImg src={wiki.cover_url} alt="" loading="lazy" decoding="async" className="size-full object-cover" />
         )}

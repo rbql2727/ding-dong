@@ -34,7 +34,7 @@ export function NotificationsPage() {
         />
       )}
       {data && data.received.length > 0 && (
-        <section className="px-4 pt-4">
+        <section className="px-4 pt-4 lg:mx-auto lg:max-w-2xl lg:px-8 lg:pt-6">
           <h2 className="mb-1 font-bold">받은 열람 요청</h2>
           <ul className="divide-y divide-gray-100">
             {data.received.map((r) => (
@@ -44,7 +44,7 @@ export function NotificationsPage() {
         </section>
       )}
       {data && data.mine.length > 0 && (
-        <section className="px-4 pt-6 pb-6">
+        <section className="px-4 pt-6 pb-6 lg:mx-auto lg:max-w-2xl lg:px-8">
           <h2 className="mb-1 font-bold">보낸 열람 요청</h2>
           <ul className="divide-y divide-gray-100">
             {data.mine.map((r) => (
