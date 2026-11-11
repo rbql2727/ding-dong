@@ -217,3 +217,42 @@ export async function deleteCharacter(full: CharacterFull) {
     ...logs.flatMap((l) => extractImageUrls(l.body)),
   ])
 }
+
+/**
+ * 이미 있는 캐릭터에 이미지 추가 (원본 1600px + 썸네일 400px 로 줄여서 올림)
+ * - 기존 이미지 뒤에 이어 붙임
+ * - setCoverToFirst: 대표 이미지가 비어 있으면 첫 번째 새 이미지를 대표로
+ * (Naru 이미지 가져오기 도구 등에서 사용)
+ */
+export async function addCharacterImages(
+  userId: string,
+  wikiId: string,
+  characterId: string,
+  files: File[],
+  options: { setCoverToFirst?: boolean } = {},
+): Promise<number> {
+  const existing = check(
+    await supabase.from('character_images').select('id').eq('character_id', characterId),
+    '이미지를 불러오지 못했어요.',
+  ) as { id: string }[]
+  let order = existing.length
+  let firstId: string | null = null
+  for (const file of files) {
+    const { imageUrl, thumbUrl } = await uploadImageWithThumb(file, mediaPaths.characterImage(userId, wikiId, characterId))
+    const res = await supabase
+      .from('character_images')
+      .insert({ character_id: characterId, image_url: imageUrl, thumb_url: thumbUrl, sort_order: order++ })
+      .select('id')
+      .single()
+    if (res.error) await removeMediaUrls([imageUrl, thumbUrl])
+    const row = check(res, '이미지를 저장하지 못했어요.') as { id: string }
+    firstId ??= row.id
+  }
+  if (options.setCoverToFirst && firstId) {
+    check(
+      await supabase.from('characters').update({ cover_image_id: firstId }).eq('id', characterId).is('cover_image_id', null),
+      '대표 이미지를 저장하지 못했어요.',
+    )
+  }
+  return files.length
+}

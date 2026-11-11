@@ -13,6 +13,7 @@ import { NotificationsPage } from './pages/tabs/NotificationsPage'
 import { HomePage, NotFoundPage } from './pages/tabs/TabPages'
 import { AccessManagePage } from './pages/wiki/AccessManagePage'
 import { ShareLinkPage } from './pages/wiki/ShareLinkPage'
+import { NaruImportPage } from './pages/tools/NaruImportPage'
 import { MyWikisPage } from './pages/wiki/MyWikisPage'
 import { WikiCreatePage, WikiSettingsPage } from './pages/wiki/WikiFormPage'
 import { WikiHomePage } from './pages/wiki/WikiHomePage'
@@ -66,6 +67,8 @@ function App() {
           <Route path="/w/:wikiId" element={<WikiHomePage />} />
           <Route path="/w/:wikiId/settings" element={<WikiSettingsPage />} />
           <Route path="/w/:wikiId/access" element={<AccessManagePage />} />
+          {/* 한 번 쓰는 도구: Naru 102호 이미지 가져오기 */}
+          <Route path="/tools/naru-import" element={<NaruImportPage />} />
           <Route path="/w/:wikiId/c/new" element={<CharacterFormPage />} />
           <Route path="/w/:wikiId/c/:charId" element={<CharacterDetailPage />} />
           <Route path="/w/:wikiId/c/:charId/edit" element={<CharacterFormPage />} />
