@@ -1,3 +1,4 @@
+import { chatPreview, isChatBody } from './chatLog'
 import { docImageUrls, docPreview, parseBody, sanitizeDoc, type DocNode } from './logDocCore'
 import { mediaPathFromUrl } from './storage'
 
@@ -15,10 +16,12 @@ export function safeDocFromBody(body: string): DocNode {
 
 /** 본문 안의 이미지 주소 목록 (삭제·정리용) */
 export function extractImageUrls(body: string): string[] {
+  if (isChatBody(body)) return [] // 채팅 로그에는 이미지가 없음
   return docImageUrls(body, isAllowedLogImage)
 }
 
 /** 목록에 보여 줄 미리보기 글 */
 export function toPreview(body: string, max = 100): string {
+  if (isChatBody(body)) return chatPreview(body, max)
   return docPreview(body, max)
 }

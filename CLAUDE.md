@@ -58,6 +58,8 @@ src/
       LogToolbar.tsx     글꼴·굵게·기울임·밑줄·취소선·형광펜·글자색·링크·이미지·정렬·표·인용·구분선·목록·들여쓰기
       LogViewer.tsx      읽기 전용 보기 (정리된 문서만)
       LogImageView.tsx   본문 이미지 (서명 주소, 외부 이미지는 안내만)
+      ChatLogEditor.tsx  채팅 로그 정리 화면 (붙여넣기 → 문단 나누기 → 눌러서 종류 고르기 / × 숨기기 / 미리보기)
+      ChatLogView.tsx    채팅 로그 보기 (말풍선, 번역은 앞 말풍선 아래, 이어진 상태창은 한 카드)
     MediaImg.tsx         ★ 업로드한 이미지는 반드시 이걸로 표시 (서명 주소로 바꿔 줌)
     VisibilityPicker.tsx 공개 범위 고르기
     icons.tsx            SVG 아이콘
@@ -71,6 +73,7 @@ src/
     backStack.ts         뒤로가기로 닫을 창 목록 — 창 컴포넌트는 useBackHandler(열림, 닫기) 사용
     useCropPicker.ts     사진 고르기 → 자르기 창 열기 상태 관리 (미리보기 주소 정리 포함)
     logDocCore.ts        ★ 로그 문서 규칙: 허용 목록 정리(sanitizeDoc), 예전 형식 변환, 미리보기, 이미지 추출, 글꼴·색 목록
+    chatLog.ts           ★ 채팅 로그 규칙: 붙여넣은 글 나누기(parseChat), 보기용 묶기, 저장 형식, 허용 목록 정리
     richText.ts          logDocCore 에 "우리 Storage 이미지만" 규칙을 연결 (safeDocFromBody, extractImageUrls, toPreview)
     useLoad.ts           데이터 불러오기 훅 (data/loading/error/reload/setData)
     theme.ts             위키 테마 색 목록, themeStyle() → CSS 변수 --wiki
@@ -96,6 +99,7 @@ supabase/
     stage4_security_check.sql   ★ 4단계 보안 테스트 53개 (a 비공개 / b 승인 전 / c 승인 후 / d 철회 + 링크·전체 공개·이미지·비로그인)
 tests/
   logDocCore.test.mts    로그 문서 정리(보안) 테스트 21개 — `npm test`
+  chatLog.test.mts       채팅 로그 나누기·묶기·정리 테스트 17개 — `npm test`
 src/assets/fonts/        갈무리 글꼴 + 라이선스(SIL OFL)
 ```
 
@@ -161,6 +165,14 @@ src/assets/fonts/        갈무리 글꼴 + 라이선스(SIL OFL)
   - 모르는 요소·속성은 버림, 깊이 30·노드 2만 개 제한.
 - 글꼴: 프리텐다드(기본)·노토산스·갈무리는 앱에 포함. **굴림·바탕은 Windows 글꼴이라 앱에 넣을 수 없음** → 그 글꼴이 깔린 기기에서만 그 모양, 아니면 비슷한 글꼴(노토산스 / 명조 계열)로 보임.
 
+### 채팅 로그 (로그의 두 번째 쓰는 방식)
+- 로그 쓰기 화면 위 **[글로 쓰기 | 채팅 로그]**. 사용자가 준 log-editor 모듈(페르소나 위키에서 떼어 낸 것)을 React/TS 로 옮김.
+- 저장 형식: `{"type":"chat","v":1,"parts":[{ "t": "me|them|narr|tr|status", "text": "...", "who"?: "이름", "hidden"?: true }]}`
+  - me 유저 말풍선 / them 캐릭터 말풍선(who 없으면 **그 로그의 캐릭터 이름**) / narr 지문 / tr 번역 병기 / status 상태창
+- 자동 나누기 규칙: `유저:`/`캐릭터:` 로 차례 전환, `*지문*`, 줄 앞 `**이름**` 이름표, 말풍선 뒤 `『번역』`, ``` 사이·`>` 줄은 상태창, 이미지 링크 삭제.
+- 보안: 불러올 때 `sanitizeChatParts` (허용 종류·속성만, 글자 수 제한). 화면은 React 가 글자 그대로 넣음(HTML 해석 안 함 — 원본 모듈의 innerHTML 방식은 쓰지 않음).
+- 두 방식을 오가도 쓰던 내용은 화면에 남아 있고, **저장할 때 보이는 방식으로 저장**(다른 방식 내용은 사라진다고 안내).
+
 ### 디자인 (5단계부터: 레트로 픽셀)
 - `src/index.css` 의 `@theme` 에서 색 이름을 바꿔 전체 적용: gray → 크림/남색 계열, indigo → 주황, white → 크림(paper). 둥근 모서리 0, 그림자 = 픽셀 단색 그림자.
 - 새 색 이름: `ink`(남색), `night`(배경), `paper`(크림), `accent`(주황), `dim`(흐린 글자). 글꼴: `font-title`(갈무리14), 기본 갈무리11.
@@ -194,6 +206,8 @@ src/assets/fonts/        갈무리 글꼴 + 라이선스(SIL OFL)
   - 검증: 브라우저에서 사진 끌기·확대 후 업로드된 파일이 256×256이고 자르기 창에서 본 영역과 똑같은지 확인, 표지 8:3 미리보기 확인, 1440px 화면 캡처 확인. 빌드·lint 통과.
 - [x] **모바일·안드로이드**: 모든 화면 360px 폰 점검(가로 넘침·작은 버튼 자동 검사 17개 화면) 후 수정, Capacitor 8 + Android 플랫폼(OCWK), 뒤로가기(창 닫기→이전 화면→홈→앱 내리기), 상태표시줄(SystemBars 밝은 글자 + safe-area), 갤러리 사진 고르기, 공개 사이트 주소(VITE_PUBLIC_SITE_URL), GitHub Actions APK 빌드, Vercel/Cloudflare Pages 설정.
   - 검증: 360px에서 17개 화면 가로 넘침 0·작은 버튼 수정(라디오는 카드 전체가 눌림), 빌드·lint·test 통과, `npx cap add android` 성공. **APK 빌드 자체는 이 클라우드 세션에 Android SDK가 없어 실행 못 함** → 사용자가 GitHub Actions 또는 PC에서 확인 필요.
+  - 이후 확인: 사용자가 Secrets 넣고 GitHub Actions 실행 → **APK 빌드 성공**(약 2분, 17MB 아티팩트).
+- [x] **채팅 로그**: 로그에 "채팅 로그" 쓰는 방식 추가(붙여넣기 → 문단 자동 나누기 → 종류 고르기·숨기기 → 말풍선 보기). 테스트 17개 + 브라우저에서 붙여넣기~저장~보기까지 확인.
 - [ ] 다음(선택): 앱 아이콘·스플래시, 릴리스(서명) APK/AAB, 인증 메일 링크를 앱으로 여는 딥링크
 - [ ] 이후(선택): 캐릭터 순서 변경, 비밀번호 재설정
 

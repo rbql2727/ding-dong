@@ -6,6 +6,8 @@ import { createLog, deleteLog, getLog, updateLog, uploadLogImage } from '../../d
 import { getWiki } from '../../data/wikis'
 import { LogEditor, type LogEditorHandle } from '../../components/log/LogEditor'
 import { LogViewer } from '../../components/log/LogViewer'
+import { ChatLogEditor, type ChatLogEditorHandle } from '../../components/log/ChatLogEditor'
+import { isChatBody, parseChatBody } from '../../lib/chatLog'
 import { ConfirmModal } from '../../components/Modal'
 import { PencilIcon, TrashIcon } from '../../components/icons'
 import { BackHeader, Button, ErrorScreen, ErrorText, IconButton, InlineLoading } from '../../components/ui'
@@ -73,7 +75,7 @@ export function LogDetailPage() {
           {edited && ` · 수정됨 ${formatDateTime(log.updated_at)}`}
         </p>
         <div className="mt-2 mb-5 h-0.5 w-8 bg-(--wiki)" />
-        {log.body.trim() ? <LogViewer body={log.body} /> : <p className="text-gray-400">본문이 없어요.</p>}
+        {log.body.trim() ? <LogViewer body={log.body} charName={characterName} /> : <p className="text-gray-400">본문이 없어요.</p>}
       </article>
 
       <ConfirmModal
@@ -117,14 +119,32 @@ export function LogEditorPage() {
       </>
     )
   }
-  return <LogEditForm key={logId ?? 'new'} wiki={data.wiki} charId={charId} log={data.log} onBack={back} />
+  return (
+    <LogEditForm key={logId ?? 'new'} wiki={data.wiki} charId={charId} charName={data.characterName} log={data.log} onBack={back} />
+  )
 }
 
-function LogEditForm({ wiki, charId, log, onBack }: { wiki: Wiki; charId: string; log?: CharacterLog; onBack: () => void }) {
+function LogEditForm({
+  wiki,
+  charId,
+  charName,
+  log,
+  onBack,
+}: {
+  wiki: Wiki
+  charId: string
+  charName: string
+  log?: CharacterLog
+  onBack: () => void
+}) {
   const { user } = useAuth()
   const navigate = useNavigate()
   const [title, setTitle] = useState(log?.title ?? '')
   const editorRef = useRef<LogEditorHandle>(null)
+  const chatRef = useRef<ChatLogEditorHandle>(null)
+  // 쓰는 방식: 글(툴바 편집기) / 채팅 로그(말풍선 정리)
+  const [mode, setMode] = useState<'doc' | 'chat'>(log && isChatBody(log.body) ? 'chat' : 'doc')
+  const startedAs = log && isChatBody(log.body) ? 'chat' : 'doc'
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
   // 이번 편집에서 새로 올린 이미지 (취소하거나 본문에서 지우면 정리)
@@ -152,7 +172,7 @@ function LogEditForm({ wiki, charId, log, onBack }: { wiki: Wiki; charId: string
     setSaving(true)
     setError('')
     try {
-      const body = editorRef.current?.getBody() ?? ''
+      const body = (mode === 'chat' ? chatRef.current?.getBody() : editorRef.current?.getBody()) ?? ''
       const saved = log ? await updateLog(log.id, cleanTitle, body) : await createLog(charId, cleanTitle, body)
       await cleanupUnused(body)
       navigate(`/w/${wiki.id}/c/${charId}/logs/${saved.id}`, { replace: true })
@@ -187,7 +207,38 @@ function LogEditForm({ wiki, charId, log, onBack }: { wiki: Wiki; charId: string
           placeholder="제목"
           className="px-input h-12 w-full px-3 font-title text-lg"
         />
-        <LogEditor ref={editorRef} initialBody={log?.body ?? ''} onUploadImage={uploadImage} />
+        {/* 쓰는 방식 고르기 */}
+        <div role="tablist" aria-label="쓰는 방식" className="flex gap-1.5">
+          {(
+            [
+              ['doc', '글로 쓰기'],
+              ['chat', '채팅 로그'],
+            ] as const
+          ).map(([m, label]) => (
+            <button
+              key={m}
+              type="button"
+              role="tab"
+              aria-selected={mode === m}
+              onClick={() => setMode(m)}
+              className={`px-btn h-10 flex-1 text-sm font-bold ${mode === m ? 'bg-ink text-paper' : 'bg-paper text-ink'}`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        {mode !== startedAs && log?.body && (
+          <p className="border-2 border-dashed border-accent px-3 py-2 text-xs text-gray-600">
+            저장하면 지금 고른 방식으로 바뀌고, 예전 {startedAs === 'chat' ? '채팅 로그' : '글'} 내용은 사라져요.
+          </p>
+        )}
+        {/* 두 편집기를 모두 유지해서, 방식을 바꿔 봐도 쓰던 내용이 남아 있게 */}
+        <div hidden={mode !== 'doc'}>
+          <LogEditor ref={editorRef} initialBody={log && !isChatBody(log.body) ? log.body : ''} onUploadImage={uploadImage} />
+        </div>
+        <div hidden={mode !== 'chat'}>
+          <ChatLogEditor ref={chatRef} initialParts={log && isChatBody(log.body) ? parseChatBody(log.body) : []} charName={charName} />
+        </div>
         <ErrorText>{error}</ErrorText>
       </form>
     </div>
