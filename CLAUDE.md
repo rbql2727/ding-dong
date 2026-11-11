@@ -19,6 +19,7 @@
 
 ## 기술 스택 (바꾸지 말 것)
 React + Vite + TypeScript, Tailwind CSS(v4, `@tailwindcss/vite`), React Router, Supabase(Auth / Postgres / Storage), Capacitor(Android).
+- 보조 라이브러리: TipTap v3(로그 편집기), 글꼴(갈무리 — `src/assets/fonts`, 프리텐다드 `pretendard`, 노토산스 `@fontsource/noto-sans-kr`). 모두 앱에 포함(오프라인 APK에서도 작동).
 
 ## 규칙
 - 권한은 프론트에서 버튼 숨기기로 끝내지 말고 **Supabase RLS 정책으로 서버에서 반드시 막는다.**
@@ -46,8 +47,12 @@ src/
     ui.tsx               Button(primary/secondary/danger/dangerSolid/theme), TextField, TextArea, BackHeader, IconButton, EmptyState, Avatar 등
     Modal.tsx            Modal, PromptModal, ConfirmModal, ActionSheet (아래에서 올라오는 창)
     ImageViewer.tsx      이미지 크게 보기 (원본)
-    LogBodyEditor.tsx    로그 본문 편집기 (굵게·이미지 넣기·미리보기)
-    RichText.tsx         로그 본문 그리기
+    log/                 ★ 로그 편집기 (TipTap)
+      extensions.ts      편집기·보기 공통 기능 목록 (logDocCore 허용 목록과 맞출 것)
+      LogEditor.tsx      툴바 + 편집 영역, getBody() 로 정리된 JSON 반환, 사진 붙여넣기·끌어놓기 업로드
+      LogToolbar.tsx     글꼴·굵게·기울임·밑줄·취소선·형광펜·글자색·링크·이미지·정렬·표·인용·구분선·목록·들여쓰기
+      LogViewer.tsx      읽기 전용 보기 (정리된 문서만)
+      LogImageView.tsx   본문 이미지 (서명 주소, 외부 이미지는 안내만)
     MediaImg.tsx         ★ 업로드한 이미지는 반드시 이걸로 표시 (서명 주소로 바꿔 줌)
     VisibilityPicker.tsx 공개 범위 고르기
     icons.tsx            SVG 아이콘
@@ -58,7 +63,8 @@ src/
     useMediaUrl.ts       저장된 주소 → 화면용 주소 훅
     visibility.ts        공개 범위 문구
     image.ts             브라우저에서 이미지 줄이기(webp, 실패 시 jpg), checkImageFile
-    richText.ts          로그 본문 형식 도우미 (이미지 추출, 미리보기 글)
+    logDocCore.ts        ★ 로그 문서 규칙: 허용 목록 정리(sanitizeDoc), 예전 형식 변환, 미리보기, 이미지 추출, 글꼴·색 목록
+    richText.ts          logDocCore 에 "우리 Storage 이미지만" 규칙을 연결 (safeDocFromBody, extractImageUrls, toPreview)
     useLoad.ts           데이터 불러오기 훅 (data/loading/error/reload/setData)
     theme.ts             위키 테마 색 목록, themeStyle() → CSS 변수 --wiki
     format.ts            날짜 표시 (한국어)
@@ -77,9 +83,13 @@ supabase/
     20261111000003_storage.sql           이미지 버킷과 정책
     20261112000001_profiles_backfill.sql 프로필 없는 기존 계정 보충 (여러 번 실행해도 안전)
     20261113000001_sharing_security.sql  4단계: 로그인 필수, 링크 열람 기록, 토큰 숨김, 탐색·미리보기 RPC, Storage 비공개+파일별 권한
+    20261114000001_log_body_limit.sql    로그 본문 길이 제한 5만 → 30만 자 (편집기 문서 JSON 용)
   tests/
     two_accounts_check.sql      계정 2개 권한 테스트 (2단계)
     stage4_security_check.sql   ★ 4단계 보안 테스트 53개 (a 비공개 / b 승인 전 / c 승인 후 / d 철회 + 링크·전체 공개·이미지·비로그인)
+tests/
+  logDocCore.test.mts    로그 문서 정리(보안) 테스트 21개 — `npm test`
+src/assets/fonts/        갈무리 글꼴 + 라이선스(SIL OFL)
 ```
 
 ## DB 설계 요약
@@ -134,14 +144,26 @@ supabase/
 - **목록(위키 홈 카드, 편집 화면 그리드, 상세 하단 줄)은 thumb_url만**, 원본(image_url)은 캐릭터 상세의 큰 이미지·크게 보기에서만. 모든 목록 이미지는 `loading="lazy"` + `decoding="async"`.
 - 삭제 시 파일도 정리: 이미지 빼기, 캐릭터·위키 삭제, 로그 삭제, 로그 수정에서 본문에서 뺀 이미지, 로그 편집 취소 시 이번에 올린 이미지.
 
-### 로그 본문 형식
-- 간단한 마크다운: 줄바꿈 그대로, `**굵게**`, 한 줄 전체가 `![설명](주소)` 이면 이미지.
-- 이미지는 **우리 Storage(media 버킷) 주소만** 표시 (외부 이미지 차단). HTML을 넣지 않고 React 요소로 그려서 스크립트 삽입 위험 없음.
+### 로그 본문 형식 (5단계부터)
+- 툴바 편집기(TipTap) 문서를 **JSON 문자열**로 `character_logs.body` 에 저장: `{"type":"doc","content":[...]}`
+- 예전 형식(일반 글 + `**굵게**` + 한 줄 `![설명](주소)` 이미지)은 불러올 때 자동으로 문서로 변환 → 저장하면 새 형식.
+- **보안: 보여 주기 전·저장하기 전에 항상 `sanitizeDoc` (허용 목록)**
+  - 요소: 문단·줄바꿈·글머리/번호 목록·인용·구분선·표·이미지 / 꾸밈: 굵게·기울임·밑줄·취소선·형광펜·링크·글자색·글꼴
+  - 링크는 http(s)/mailto 만 (새 창, noopener). 글자색은 #hex/rgb() 만. 글꼴은 목록 5개 값만. 정렬은 left/center/right/justify 만.
+  - 이미지는 우리 Storage(media) 주소만 → 화면에서는 서명 주소로. 다른 사이트 이미지는 저장 시 빠짐.
+  - 모르는 요소·속성은 버림, 깊이 30·노드 2만 개 제한.
+- 글꼴: 프리텐다드(기본)·노토산스·갈무리는 앱에 포함. **굴림·바탕은 Windows 글꼴이라 앱에 넣을 수 없음** → 그 글꼴이 깔린 기기에서만 그 모양, 아니면 비슷한 글꼴(노토산스 / 명조 계열)로 보임.
+
+### 디자인 (5단계부터: 레트로 픽셀)
+- `src/index.css` 의 `@theme` 에서 색 이름을 바꿔 전체 적용: gray → 크림/남색 계열, indigo → 주황, white → 크림(paper). 둥근 모서리 0, 그림자 = 픽셀 단색 그림자.
+- 새 색 이름: `ink`(남색), `night`(배경), `paper`(크림), `accent`(주황), `dim`(흐린 글자). 글꼴: `font-title`(갈무리14), 기본 갈무리11.
+- 재사용 클래스: `px-window`(창), `px-titlebar`(남색 제목 줄 + 주황 디더), `px-winbtn`(창 버튼), `px-btn`(눌리는 버튼), `px-input`(입력칸), `px-label`(이름표), `px-dashed`, `app-frame`.
+- 로그 본문 스타일은 `.log-content` (읽기 편하게 프리텐다드 기본).
 
 ## 개발 명령
 - `npm install` 패키지 설치
 - `npm run dev` 개발 서버 (http://localhost:5173)
-- `npm run build` 배포용 빌드 / `npm run lint` 코드 검사
+- `npm run build` 배포용 빌드 / `npm run lint` 코드 검사 / `npm test` 로그 문서 보안 테스트
 
 ## 현재 단계
 - [x] **1단계 준비**: Vite+React+TS+Tailwind 프로젝트, Supabase 연결 모듈, DB 마이그레이션(테이블·RLS·Storage), .env.example. 로컬 Postgres에서 RLS 동작 테스트 40개 통과. 실제 Supabase 프로젝트에 SQL 적용 완료(사용자가 SQL Editor로 실행). GitHub `rbql2727/ding-dong` main 브랜치에 업로드.
@@ -153,7 +175,11 @@ supabase/
 - [x] **4단계 공개·승인**: 마이그레이션 `20261113000001_sharing_security.sql`(로그인 필수, 링크 열람 기록, 토큰 숨김, Storage 비공개+파일별 권한, 탐색·미리보기·링크 RPC). 위키·캐릭터 공개 범위 선택, 공유 링크(복사·재발급), 잠긴 위키 화면+열람 요청(중복 방지), 승인 관리(승인·거절·철회·재승인), 탐색(검색·더 보기), 알림(받은/보낸 요청), 모든 이미지 서명 주소로 표시.
   - 검증: 로컬 Postgres에서 `stage4_security_check.sql` 53개 통과 + 규칙을 일부러 망가뜨리면 13개 실패하는 것 확인(테스트가 진짜로 잡아냄) + 실제 storage.objects 행 단위 정책 확인. 빌드·lint 통과, 가짜 데이터로 화면 확인.
   - 사용자 할 일: 마이그레이션 실행, 보안 테스트 SQL 실행, 계정 2개로 화면 확인.
-- [ ] 이후: Capacitor 안드로이드, (선택) 캐릭터 순서 변경, 비밀번호 재설정, 로그 편집기 개선
+- [x] **5단계 디자인·편집기**: 레트로 픽셀 디자인(남색 별밤 + 크림 창 + 주황, 갈무리 글꼴) 전체 적용. 로그 편집기를 툴바 방식(TipTap)으로 교체, 글꼴 5종. 로그 본문 JSON 저장 + 허용 목록 정리, 예전 글 자동 변환. 로그 화면은 필요할 때만 불러옴(lazy).
+  - 검증: `npm test` 21개 통과(javascript 링크·CSS 주입·외부 이미지·경로 조작 차단 등), 실제 브라우저에서 툴바 조작 → 저장되는 문서 확인(굵게·색·글꼴·정렬·표·예전 이미지 유지), 보기 화면에서 위험 링크 제거·외부 이미지 요청 0건 확인. 빌드·lint 통과.
+  - 사용자 할 일: `20261114000001_log_body_limit.sql` 실행.
+- [ ] 다음: Capacitor 안드로이드 APK
+- [ ] 이후(선택): 캐릭터 순서 변경, 비밀번호 재설정
 
 ## 결정 사항 메모
 - 캐릭터 visibility 기본값은 DB상 private(명세대로). 앱에서 캐릭터를 새로 만들 때는 위키의 공개 범위를 기본으로 넣어 줄 예정.
@@ -168,7 +194,9 @@ supabase/
 - (3단계) 캐릭터 저장(saveCharacter)은 여러 단계(기본 정보→항목→이미지 삭제→새 이미지 업로드→순서→대표 이미지). 중간 실패 시 일부만 저장될 수 있어 화면에 안내.
 - (3단계) 대표 이미지를 안 고르면 첫 번째 이미지가 대표. 캐릭터당 이미지 최대 30장, 고르는 원본은 30MB까지(줄여서 올리므로).
 - (3단계) 자주 쓰는 항목 이름 버튼(외모·성격·나이…)으로 빠르게 추가. 내용·이름이 모두 빈 항목은 저장 시 버림.
-- (3단계) 로그 편집기에서 이미지는 긴 주소 한 줄로 보임(미리보기로 확인). 나중에 보기 편한 편집기로 바꿀 수 있음.
+- (5단계) 로그 편집기를 툴바 방식으로 바꿈 → (3단계의 "긴 주소 한 줄" 문제 해결).
+- (5단계) 표·구분선·이미지를 넣을 때 고른 글자를 지우지 않도록 선택 끝에 넣음 (테스트 중 발견해서 고침).
+- (5단계) 제목 줄의 _ □ × 버튼은 꾸밈용(누를 수 없음). 하위 화면은 왼쪽 ◀ 버튼이 뒤로 가기.
 - (3단계) 캐릭터 순서 변경 UI는 아직 없음 (방 안에서는 만든 순서).
 - (3단계) JS 번들이 500kB를 넘어 빌드 경고가 남. 나중에 화면별로 나눠 불러오기(lazy) 고려.
 - (4단계) "전체 공개"도 로그인 필요 (사용자 요구). 비로그인 열람 화면은 만들지 않음.

@@ -18,7 +18,7 @@ export function MyWikisPage() {
         right={
           <Link
             to="/wikis/new"
-            className="flex h-9 items-center gap-1 rounded-full bg-indigo-500 pr-4 pl-3 text-sm font-semibold text-white active:bg-indigo-600"
+            className="px-winbtn h-8 gap-1 pr-3 pl-2 text-sm font-bold"
           >
             <PlusIcon className="size-5" />새 위키
           </Link>
@@ -64,15 +64,18 @@ function WikiCard({ wiki }: { wiki: WikiWithCount }) {
     <Link
       to={`/w/${wiki.id}`}
       style={themeStyle(wiki.theme_color)}
-      className="block overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm active:scale-[0.99]"
+      className="px-window block overflow-hidden active:translate-x-0.5 active:translate-y-0.5"
     >
-      <div className="relative h-28 bg-(--wiki)">
+      <div className="px-titlebar flex h-8 items-center px-2.5 text-sm">
+        <span className="truncate">{wiki.name}.wiki</span>
+      </div>
+      <div className="relative h-28 border-b-3 border-ink bg-(--wiki)">
         {wiki.cover_url && (
           <MediaImg src={wiki.cover_url} alt="" loading="lazy" decoding="async" className="size-full object-cover" />
         )}
       </div>
       <div className="flex items-start gap-3 p-4">
-        <span className="mt-1.5 size-2.5 shrink-0 rounded-full bg-(--wiki)" />
+        <span className="mt-1 size-3 shrink-0 border-2 border-ink bg-(--wiki)" />
         <div className="min-w-0 flex-1">
           <p className="truncate font-bold text-gray-900">{wiki.name}</p>
           {wiki.description && <p className="mt-0.5 line-clamp-2 text-sm text-gray-500">{wiki.description}</p>}

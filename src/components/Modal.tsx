@@ -13,11 +13,15 @@ export function Modal({ open, onClose, title, children }: { open: boolean; onClo
   if (!open) return null
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center" role="dialog" aria-modal="true">
-      <button type="button" aria-label="닫기" className="absolute inset-0 bg-black/40" onClick={onClose} />
-      <div className="relative w-full max-w-md rounded-t-3xl bg-white px-5 pt-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] shadow-xl sm:rounded-3xl">
-        <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-gray-200 sm:hidden" />
-        {title && <h2 className="mb-4 text-lg font-bold">{title}</h2>}
-        {children}
+      <button type="button" aria-label="닫기" className="absolute inset-0 bg-night/60" onClick={onClose} />
+      <div className="px-window relative w-full max-w-md sm:mx-4">
+        <div className="px-titlebar flex h-11 items-center justify-between gap-2 pr-2 pl-3">
+          <h2 className="truncate font-title text-base">{title ?? ''}</h2>
+          <button type="button" onClick={onClose} aria-label="닫기" className="px-winbtn size-7 min-w-7">
+            ×
+          </button>
+        </div>
+        <div className="px-5 pt-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))]">{children}</div>
       </div>
     </div>
   )
@@ -180,7 +184,7 @@ export function ActionSheet({
 }) {
   return (
     <Modal open={open} onClose={onClose} title={title}>
-      <ul className="-mx-2">
+      <ul className="-mx-2 -mt-2">
         {actions.map((a) => (
           <li key={a.label}>
             <button
@@ -190,7 +194,7 @@ export function ActionSheet({
                 onClose()
                 a.onClick()
               }}
-              className={`w-full rounded-xl px-3 py-3.5 text-left font-medium active:bg-gray-50 disabled:text-gray-300 ${
+              className={`w-full px-3 py-3.5 text-left font-bold active:bg-gray-100 disabled:text-gray-300 ${
                 a.danger ? 'text-red-600' : 'text-gray-800'
               }`}
             >

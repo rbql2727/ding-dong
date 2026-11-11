@@ -94,7 +94,7 @@ function MineRow({ req }: { req: MyRequest }) {
             {req.owner_nickname} · {formatDate(req.created_at)}
           </p>
         </div>
-        <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLE[req.status]}`}>{STATUS_TEXT[req.status]}</span>
+        <span className={`shrink-0 px-2 py-0.5 text-xs font-medium ${STATUS_STYLE[req.status]}`}>{STATUS_TEXT[req.status]}</span>
       </Link>
     </li>
   )

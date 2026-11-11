@@ -17,7 +17,7 @@ export function Spinner({ className = 'size-6' }: { className?: string }) {
   return (
     <span
       aria-hidden
-      className={`inline-block animate-spin rounded-full border-2 border-current border-t-transparent ${className}`}
+      className={`px-spinner ${className}`}
     />
   )
 }
@@ -36,17 +36,17 @@ export function Button({
   ...rest
 }: ButtonProps) {
   const styles = {
-    primary: 'bg-indigo-500 text-white active:bg-indigo-600 disabled:bg-indigo-300',
-    secondary: 'border border-gray-200 bg-white text-gray-800 active:bg-gray-50 disabled:text-gray-400',
-    danger: 'border border-red-200 bg-white text-red-600 active:bg-red-50 disabled:text-red-300',
-    dangerSolid: 'bg-red-500 text-white active:bg-red-600 disabled:bg-red-300',
+    primary: 'bg-accent text-paper',
+    secondary: 'bg-paper text-ink',
+    danger: 'bg-paper text-red-600',
+    dangerSolid: 'bg-red-600 text-paper',
     // 위키 테마 색 (위키 화면에서 --wiki 변수를 정해 둠)
-    theme: 'bg-(--wiki) text-white active:brightness-95 disabled:opacity-50',
+    theme: 'bg-(--wiki) text-paper',
   }[variant]
   return (
     <button
       disabled={disabled || loading}
-      className={`flex h-12 w-full items-center justify-center gap-2 rounded-xl font-semibold transition-colors ${styles} ${className}`}
+      className={`px-btn flex h-12 w-full items-center justify-center gap-2 font-bold ${styles} ${className}`}
       {...rest}
     >
       {loading && <Spinner className="size-4" />}
@@ -64,10 +64,13 @@ export function TextField({ label, hint, id, className = '', ...rest }: TextFiel
   const inputId = id ?? `f-${label}`
   return (
     <label htmlFor={inputId} className="block">
-      <span className="mb-1.5 block text-sm font-medium text-gray-700">{label}</span>
+      <span className="mb-1.5 block text-sm font-bold text-ink">
+        <span className="text-accent">* </span>
+        {label}
+      </span>
       <input
         id={inputId}
-        className={`h-12 w-full rounded-xl border border-gray-200 bg-white px-4 text-base outline-none placeholder:text-gray-400 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 ${className}`}
+        className={`px-input h-12 w-full px-4 text-base ${className}`}
         {...rest}
       />
       {hint && <span className="mt-1 block text-xs text-gray-400">{hint}</span>}
@@ -78,21 +81,34 @@ export function TextField({ label, hint, id, className = '', ...rest }: TextFiel
 export function ErrorText({ children }: { children: ReactNode }) {
   if (!children) return null
   return (
-    <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
+    <p role="alert" className="border-2 border-red-600 bg-red-50 px-3 py-2 text-sm text-red-700">
       {children}
     </p>
   )
 }
 
-/** 화면 위쪽 제목 줄 (스크롤해도 붙어 있음) */
+/** 화면 위쪽 제목 줄 — 레트로 창 제목 줄 모양 (스크롤해도 붙어 있음) */
 export function PageHeader({ title, right }: { title: string; right?: ReactNode }) {
   return (
-    <header className="sticky top-0 z-10 border-b border-gray-100 bg-white/90 pt-[env(safe-area-inset-top)] backdrop-blur">
-      <div className="flex h-14 items-center justify-between px-4">
-        <h1 className="text-lg font-bold">{title}</h1>
-        {right}
+    <header className="px-titlebar sticky top-0 z-10 pt-[env(safe-area-inset-top)]">
+      <div className="flex h-14 items-center justify-between gap-2 px-4">
+        <h1 className="truncate font-title text-xl">{title}</h1>
+        {right ?? <WindowDots />}
       </div>
     </header>
+  )
+}
+
+/** 꾸밈용 창 버튼 (_ □ ×) */
+function WindowDots() {
+  return (
+    <div aria-hidden className="flex gap-1">
+      {['_', '□', '×'].map((c) => (
+        <span key={c} className="px-winbtn pointer-events-none size-7 min-w-7 text-sm leading-none">
+          {c}
+        </span>
+      ))}
+    </div>
   )
 }
 
@@ -100,10 +116,10 @@ export function PageHeader({ title, right }: { title: string; right?: ReactNode 
 export function EmptyState({ icon, title, description }: { icon: ReactNode; title: string; description?: string }) {
   return (
     <div className="flex flex-col items-center px-6 py-20 text-center">
-      <div className="mb-4 flex size-16 items-center justify-center rounded-full bg-indigo-50 text-indigo-400">
+      <div className="mb-4 flex size-16 items-center justify-center border-3 border-ink bg-paper text-accent shadow-md">
         {icon}
       </div>
-      <p className="font-semibold text-gray-800">{title}</p>
+      <p className="font-bold text-ink">{title}</p>
       {description && <p className="mt-1 text-sm text-gray-500">{description}</p>}
     </div>
   )
@@ -112,12 +128,12 @@ export function EmptyState({ icon, title, description }: { icon: ReactNode; titl
 /** 프로필 사진 (없으면 닉네임 첫 글자) */
 export function Avatar({ url, name, className = 'size-10 text-base' }: { url?: string | null; name?: string; className?: string }) {
   if (url) {
-    return <MediaImg src={url} alt="" loading="lazy" className={`shrink-0 rounded-full bg-gray-100 object-cover ${className}`} />
+    return <MediaImg src={url} alt="" loading="lazy" className={`shrink-0 border-2 border-ink bg-gray-100 object-cover ${className}`} />
   }
   return (
     <span
       aria-hidden
-      className={`flex shrink-0 items-center justify-center rounded-full bg-indigo-100 font-bold text-indigo-500 ${className}`}
+      className={`flex shrink-0 items-center justify-center border-2 border-ink bg-accent font-bold text-paper ${className}`}
     >
       {(name ?? '?').trim().charAt(0) || '?'}
     </span>
@@ -135,24 +151,19 @@ export function BackHeader({
   right?: ReactNode
 }) {
   return (
-    <header className="sticky top-0 z-10 border-b border-gray-100 bg-white/90 pt-[env(safe-area-inset-top)] backdrop-blur">
-      <div className="flex h-14 items-center gap-1 px-2">
-        <button
-          type="button"
-          onClick={onBack}
-          aria-label="뒤로 가기"
-          className="flex size-10 shrink-0 items-center justify-center rounded-full text-gray-700 active:bg-gray-100"
-        >
-          <BackIcon />
+    <header className="px-titlebar sticky top-0 z-10 pt-[env(safe-area-inset-top)]">
+      <div className="flex h-14 items-center gap-2 px-3">
+        <button type="button" onClick={onBack} aria-label="뒤로 가기" className="px-winbtn shrink-0">
+          <BackIcon className="size-5" />
         </button>
-        <h1 className="min-w-0 flex-1 truncate text-base font-bold">{title}</h1>
-        <div className="flex shrink-0 items-center gap-1 pr-1">{right}</div>
+        <h1 className="min-w-0 flex-1 truncate font-title text-lg">{title}</h1>
+        <div className="flex shrink-0 items-center gap-1.5">{right}</div>
       </div>
     </header>
   )
 }
 
-/** 동그란 아이콘 버튼 */
+/** 아이콘 버튼 (제목 줄 안에서는 창 버튼 모양) */
 export function IconButton({
   label,
   children,
@@ -164,7 +175,7 @@ export function IconButton({
       type="button"
       aria-label={label}
       title={label}
-      className={`flex size-10 items-center justify-center rounded-full text-gray-600 active:bg-gray-100 disabled:opacity-30 ${className}`}
+      className={`px-iconbtn flex size-10 items-center justify-center text-gray-600 active:bg-gray-100 disabled:opacity-30 ${className}`}
       {...rest}
     >
       {children}
@@ -179,14 +190,17 @@ export function TextArea({ label, hint, id, className = '', ...rest }: TextAreaP
   const field = (
     <textarea
       id={id}
-      className={`field-sizing-content min-h-24 w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-base leading-relaxed outline-none placeholder:text-gray-400 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 ${className}`}
+      className={`px-input field-sizing-content min-h-24 w-full resize-none px-4 py-3 text-base leading-relaxed ${className}`}
       {...rest}
     />
   )
   if (!label) return field
   return (
     <label htmlFor={id} className="block">
-      <span className="mb-1.5 block text-sm font-medium text-gray-700">{label}</span>
+      <span className="mb-1.5 block text-sm font-bold text-ink">
+        <span className="text-accent">* </span>
+        {label}
+      </span>
       {field}
       {hint && <span className="mt-1 block text-xs text-gray-400">{hint}</span>}
     </label>
@@ -199,7 +213,7 @@ export function ErrorScreen({ message, onRetry }: { message: string; onRetry?: (
     <div className="flex flex-col items-center gap-4 px-6 py-24 text-center">
       <p className="text-gray-700">{message}</p>
       {onRetry && (
-        <button type="button" onClick={onRetry} className="rounded-xl border border-gray-200 px-4 py-2 text-sm font-medium">
+        <button type="button" onClick={onRetry} className="px-btn bg-paper px-4 py-2 text-sm font-bold">
           다시 시도
         </button>
       )}
@@ -214,4 +228,9 @@ export function InlineLoading() {
       <Spinner />
     </div>
   )
+}
+
+/** 섹션 이름표 — 남색 상자 + 주황 그림자 */
+export function SectionLabel({ children, className = '' }: { children: ReactNode; className?: string }) {
+  return <h2 className={`px-label text-base ${className}`}>{children}</h2>
 }

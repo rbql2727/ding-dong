@@ -104,7 +104,7 @@ function WikiContent({ wikiId, preview }: { wikiId: string; preview: WikiPreview
     <div style={themeStyle(wiki.theme_color)} className="pb-24">
       {/* 표지 + 제목 */}
       <section className="relative">
-        <div className="relative h-44 bg-(--wiki)">
+        <div className="relative h-44 border-b-3 border-ink bg-(--wiki)">
           {wiki.cover_url && <MediaImg src={wiki.cover_url} alt="" decoding="async" className="size-full object-cover" />}
           <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/10" />
         </div>
@@ -113,14 +113,14 @@ function WikiContent({ wikiId, preview }: { wikiId: string; preview: WikiPreview
           onBack={() => navigate(backTo)}
           right={
             isOwner && (
-              <IconButton label="위키 설정" onClick={() => navigate(`/w/${wiki.id}/settings`)} className="text-white active:bg-white/20">
+              <IconButton label="위키 설정" onClick={() => navigate(`/w/${wiki.id}/settings`)} className="px-winbtn size-9 min-w-9">
                 <GearIcon />
               </IconButton>
             )
           }
         />
         <div className="px-4 pt-4">
-          <h1 className="text-2xl font-bold break-words text-gray-900">{wiki.name}</h1>
+          <h1 className="font-title text-2xl break-words text-gray-900">{wiki.name}</h1>
           {wiki.description && <p className="mt-2 text-sm leading-relaxed whitespace-pre-wrap text-gray-600">{wiki.description}</p>}
           <p className="mt-2 text-xs text-gray-400">
             {!isOwner && <>{preview.owner_nickname} · </>}캐릭터 {characters.length}명 · 방 {rooms.length}개
@@ -129,14 +129,14 @@ function WikiContent({ wikiId, preview }: { wikiId: string; preview: WikiPreview
             <div className="mt-3 flex flex-wrap gap-2">
               <Link
                 to={`/w/${wiki.id}/settings`}
-                className="rounded-full border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 active:bg-gray-50"
+                className="px-btn bg-paper px-3 py-1.5 text-xs font-bold text-ink"
               >
                 공개 범위: {visibilityLabel(wiki.visibility)}
               </Link>
               {(wiki.visibility === 'approved' || pendingCount > 0) && (
                 <Link
                   to={`/w/${wiki.id}/access`}
-                  className="rounded-full bg-(--wiki) px-3 py-1.5 text-xs font-semibold text-white active:brightness-95"
+                  className="px-btn bg-(--wiki) px-3 py-1.5 text-xs font-bold text-paper"
                 >
                   열람 승인 관리{pendingCount > 0 && ` · 대기 ${pendingCount}`}
                 </Link>
@@ -257,7 +257,7 @@ function TopBar({ onBack, right, overlay = false }: { onBack: () => void; right?
     <div
       className={`${overlay ? 'absolute inset-x-0 top-0 text-white' : 'text-gray-700'} flex items-center justify-between px-2 pt-[calc(0.5rem+env(safe-area-inset-top))]`}
     >
-      <IconButton label="뒤로 가기" onClick={onBack} className={overlay ? 'text-white active:bg-white/20' : ''}>
+      <IconButton label="뒤로 가기" onClick={onBack} className={overlay ? 'px-winbtn size-9 min-w-9' : ''}>
         <BackIcon />
       </IconButton>
       {right}
@@ -286,9 +286,8 @@ function RoomSection({
   return (
     <section>
       <div className="mb-3 flex items-center gap-2 px-4">
-        <span className="h-4 w-1 rounded-full bg-(--wiki)" />
-        <h2 className="min-w-0 flex-1 truncate text-lg font-bold">{title}</h2>
-        <span className="text-sm text-gray-400">{characters.length}</span>
+        <h2 className="px-label min-w-0 truncate text-base">{title}</h2>
+        <span className="ml-1 flex-1 text-sm text-accent italic">{characters.length}</span>
         {onMenu && (
           <IconButton label={`${title} 방 메뉴`} onClick={onMenu} className="-mr-2">
             <MoreIcon className="size-5" />
@@ -303,10 +302,10 @@ function RoomSection({
           {characters.map((c) => (
             <li key={c.id}>
               <Link to={`/w/${wikiId}/c/${c.id}`} className="block active:opacity-80">
-                <div className="relative aspect-[3/4] overflow-hidden rounded-xl bg-gray-100">
+                <div className="relative aspect-[3/4] overflow-hidden border-3 border-ink bg-gray-100 shadow-sm">
                   {/* 주인에게만: 위키와 다른 공개 범위인 캐릭터 표시 */}
                   {isOwner && c.visibility !== wikiVisibility && (
-                    <span className="absolute top-1.5 left-1.5 z-[1] rounded-full bg-black/60 px-2 py-0.5 text-[11px] font-medium text-white">
+                    <span className="absolute top-1.5 left-1.5 z-[1] bg-ink px-2 py-0.5 text-[11px] text-paper">
                       {visibilityLabel(c.visibility)}
                     </span>
                   )}

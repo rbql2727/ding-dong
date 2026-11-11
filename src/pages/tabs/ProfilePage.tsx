@@ -115,7 +115,7 @@ export function ProfilePage() {
             className="relative"
           >
             <Avatar url={profile?.avatar_url} name={profile?.nickname} className="size-28 text-4xl" />
-            <span className="absolute right-0 bottom-0 flex size-9 items-center justify-center rounded-full border-2 border-white bg-indigo-500 text-white">
+            <span className="absolute -right-1 -bottom-1 flex size-9 items-center justify-center border-2 border-ink bg-accent text-paper">
               {uploading ? <Spinner className="size-4" /> : <CameraIcon className="size-5" />}
             </span>
           </button>
@@ -159,7 +159,7 @@ export function ProfilePage() {
       {/* 저장 완료 안내 (토스트) */}
       {notice && (
         <div className="fixed inset-x-0 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-30 flex justify-center px-4">
-          <p className="rounded-full bg-gray-900/90 px-4 py-2 text-sm text-white shadow-lg">{notice}</p>
+          <p className="border-2 border-paper bg-ink px-4 py-2 text-sm text-paper shadow-md">{notice}</p>
         </div>
       )}
     </>

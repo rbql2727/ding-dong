@@ -4,9 +4,9 @@ import { useAuth } from '../../auth/AuthContext'
 import { getCharacterFull } from '../../data/characters'
 import { createLog, deleteLog, getLog, updateLog, uploadLogImage } from '../../data/logs'
 import { getWiki } from '../../data/wikis'
-import { LogBodyEditor } from '../../components/LogBodyEditor'
+import { LogEditor, type LogEditorHandle } from '../../components/log/LogEditor'
+import { LogViewer } from '../../components/log/LogViewer'
 import { ConfirmModal } from '../../components/Modal'
-import { RichText } from '../../components/RichText'
 import { PencilIcon, TrashIcon } from '../../components/icons'
 import { BackHeader, Button, ErrorScreen, ErrorText, IconButton, InlineLoading } from '../../components/ui'
 import { formatDateTime } from '../../lib/format'
@@ -67,13 +67,13 @@ export function LogDetailPage() {
         }
       />
       <article className="px-4 pt-5">
-        <h1 className="text-xl font-bold break-words text-gray-900">{log.title}</h1>
+        <h1 className="font-title text-xl break-words text-gray-900">{log.title}</h1>
         <p className="mt-1 text-xs text-gray-400">
           {formatDateTime(log.created_at)}
           {edited && ` · 수정됨 ${formatDateTime(log.updated_at)}`}
         </p>
-        <div className="mt-2 mb-5 h-0.5 w-8 rounded-full bg-(--wiki)" />
-        {log.body.trim() ? <RichText text={log.body} /> : <p className="text-gray-400">본문이 없어요.</p>}
+        <div className="mt-2 mb-5 h-0.5 w-8 bg-(--wiki)" />
+        {log.body.trim() ? <LogViewer body={log.body} /> : <p className="text-gray-400">본문이 없어요.</p>}
       </article>
 
       <ConfirmModal
@@ -117,14 +117,14 @@ export function LogEditorPage() {
       </>
     )
   }
-  return <LogEditor key={logId ?? 'new'} wiki={data.wiki} charId={charId} log={data.log} onBack={back} />
+  return <LogEditForm key={logId ?? 'new'} wiki={data.wiki} charId={charId} log={data.log} onBack={back} />
 }
 
-function LogEditor({ wiki, charId, log, onBack }: { wiki: Wiki; charId: string; log?: CharacterLog; onBack: () => void }) {
+function LogEditForm({ wiki, charId, log, onBack }: { wiki: Wiki; charId: string; log?: CharacterLog; onBack: () => void }) {
   const { user } = useAuth()
   const navigate = useNavigate()
   const [title, setTitle] = useState(log?.title ?? '')
-  const [body, setBody] = useState(log?.body ?? '')
+  const editorRef = useRef<LogEditorHandle>(null)
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
   // 이번 편집에서 새로 올린 이미지 (취소하거나 본문에서 지우면 정리)
@@ -152,6 +152,7 @@ function LogEditor({ wiki, charId, log, onBack }: { wiki: Wiki; charId: string; 
     setSaving(true)
     setError('')
     try {
+      const body = editorRef.current?.getBody() ?? ''
       const saved = log ? await updateLog(log.id, cleanTitle, body) : await createLog(charId, cleanTitle, body)
       await cleanupUnused(body)
       navigate(`/w/${wiki.id}/c/${charId}/logs/${saved.id}`, { replace: true })
@@ -184,9 +185,9 @@ function LogEditor({ wiki, charId, log, onBack }: { wiki: Wiki; charId: string; 
           maxLength={100}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="제목"
-          className="w-full border-b border-gray-200 py-2 text-xl font-bold outline-none placeholder:text-gray-300 focus:border-(--wiki)"
+          className="px-input h-12 w-full px-3 font-title text-lg"
         />
-        <LogBodyEditor value={body} onChange={setBody} onUploadImage={uploadImage} />
+        <LogEditor ref={editorRef} initialBody={log?.body ?? ''} onUploadImage={uploadImage} />
         <ErrorText>{error}</ErrorText>
       </form>
     </div>

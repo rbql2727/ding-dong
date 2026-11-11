@@ -12,7 +12,7 @@ const TABS = [
 /** 로그인 후 화면의 공통 틀: 위쪽은 각 화면 내용, 아래쪽은 탭 */
 export function AppLayout() {
   return (
-    <div className="mx-auto min-h-dvh max-w-md bg-white">
+    <div className="app-frame mx-auto max-w-md">
       {/* 하단 탭에 내용이 가려지지 않도록 아래 여백 */}
       <main className="pb-[calc(4rem+env(safe-area-inset-bottom))]">
         <Outlet />
@@ -20,17 +20,17 @@ export function AppLayout() {
 
       <nav
         aria-label="주요 메뉴"
-        className="fixed inset-x-0 bottom-0 z-20 border-t border-gray-100 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur"
+        className="fixed inset-x-0 bottom-0 z-20 bg-ink pb-[env(safe-area-inset-bottom)]"
       >
-        <ul className="mx-auto grid h-16 max-w-md grid-cols-5">
+        <ul className="mx-auto grid h-16 max-w-md grid-cols-5 border-t-3 border-accent bg-ink">
           {TABS.map(({ to, label, Icon, end }) => (
             <li key={to}>
               <NavLink
                 to={to}
                 end={end}
                 className={({ isActive }) =>
-                  `flex h-full flex-col items-center justify-center gap-0.5 text-[11px] font-medium transition-colors ${
-                    isActive ? 'text-indigo-500' : 'text-gray-400 active:text-gray-600'
+                  `flex h-full flex-col items-center justify-center gap-0.5 text-[11px] ${
+                    isActive ? 'bg-accent text-paper' : 'text-dim active:text-paper'
                   }`
                 }
               >

@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react'
 import { Route, Routes } from 'react-router-dom'
 import { ProtectedRoute, PublicOnlyRoute } from './auth/routes'
 import { AppLayout } from './components/AppLayout'
@@ -7,7 +8,6 @@ import { LoginPage } from './pages/auth/LoginPage'
 import { SignupPage } from './pages/auth/SignupPage'
 import { CharacterDetailPage } from './pages/character/CharacterDetailPage'
 import { CharacterFormPage } from './pages/character/CharacterFormPage'
-import { LogDetailPage, LogEditorPage } from './pages/log/LogPages'
 import { ProfilePage } from './pages/tabs/ProfilePage'
 import { ExplorePage } from './pages/tabs/ExplorePage'
 import { NotificationsPage } from './pages/tabs/NotificationsPage'
@@ -17,6 +17,11 @@ import { ShareLinkPage } from './pages/wiki/ShareLinkPage'
 import { MyWikisPage } from './pages/wiki/MyWikisPage'
 import { WikiCreatePage, WikiSettingsPage } from './pages/wiki/WikiFormPage'
 import { WikiHomePage } from './pages/wiki/WikiHomePage'
+import { InlineLoading } from './components/ui'
+
+// 로그 화면은 글 편집기가 커서 필요할 때만 불러옴 (첫 화면이 빨라짐)
+const LogDetailPage = lazy(() => import('./pages/log/LogPages').then((m) => ({ default: m.LogDetailPage })))
+const LogEditorPage = lazy(() => import('./pages/log/LogPages').then((m) => ({ default: m.LogEditorPage })))
 
 /**
  * 화면 주소(라우트) 목록
@@ -48,7 +53,13 @@ function App() {
         {/* 공유 링크: 로그인 후 열람 기록을 남기고 위키로 이동 */}
         <Route path="/s/:token" element={<ShareLinkPage />} />
 
-        <Route element={<SubLayout />}>
+        <Route
+          element={
+            <Suspense fallback={<InlineLoading />}>
+              <SubLayout />
+            </Suspense>
+          }
+        >
           <Route path="/wikis/new" element={<WikiCreatePage />} />
           <Route path="/w/:wikiId" element={<WikiHomePage />} />
           <Route path="/w/:wikiId/settings" element={<WikiSettingsPage />} />

@@ -13,11 +13,11 @@ export function HomePage() {
       <section className="px-4 pt-5">
         <Link
           to="/profile"
-          className="flex items-center gap-3 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-500 p-5 text-white shadow-lg shadow-indigo-100"
+          className="px-window flex items-center gap-3 p-5"
         >
-          <Avatar url={profile?.avatar_url} name={profile?.nickname} className="size-12 text-lg ring-2 ring-white/60" />
+          <Avatar url={profile?.avatar_url} name={profile?.nickname} className="size-12 text-lg shadow-sm" />
           <div className="min-w-0">
-            <p className="text-sm text-white/80">반가워요</p>
+            <p className="text-sm text-dim">반가워요</p>
             <p className="truncate text-lg font-bold">{profile?.nickname ?? '사용자'}님</p>
           </div>
         </Link>

@@ -172,11 +172,11 @@ function WikiForm({ wiki, onBack }: { wiki?: Wiki; onBack: () => void }) {
                 aria-pressed={themeColor === c}
                 onClick={() => setThemeColor(c)}
                 style={{ backgroundColor: c }}
-                className={`size-9 rounded-full ${themeColor === c ? 'ring-2 ring-gray-900 ring-offset-2' : ''}`}
+                className={`size-9 ${themeColor === c ? 'ring-2 ring-gray-900 ring-offset-2' : ''}`}
               />
             ))}
             <label
-              className={`relative flex size-9 cursor-pointer items-center justify-center overflow-hidden rounded-full border border-gray-200 text-xs text-gray-500 ${
+              className={`relative flex size-9 cursor-pointer items-center justify-center overflow-hidden border border-gray-200 text-xs text-gray-500 ${
                 THEME_COLORS.includes(themeColor) ? '' : 'ring-2 ring-gray-900 ring-offset-2'
               }`}
               style={THEME_COLORS.includes(themeColor) ? undefined : { backgroundColor: themeColor }}
@@ -229,7 +229,7 @@ function WikiForm({ wiki, onBack }: { wiki?: Wiki; onBack: () => void }) {
         )}
 
         {/* 저장 버튼 (화면 아래 고정) */}
-        <div className="fixed inset-x-0 bottom-0 z-20 border-t border-gray-100 bg-white/95 px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur">
+        <div className="fixed inset-x-0 bottom-0 z-20 border-t-3 border-ink bg-paper px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
           <div className="mx-auto max-w-md">
             <Button type="submit" variant="theme" loading={saving}>
               {isNew ? '위키 만들기' : '저장'}

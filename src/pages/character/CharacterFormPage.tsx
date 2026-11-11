@@ -223,7 +223,7 @@ function CharacterForm({
             <select
               value={roomId ?? ''}
               onChange={(e) => setRoomId(e.target.value || null)}
-              className="h-12 w-full rounded-xl border border-gray-200 bg-white px-3 text-base outline-none focus:border-indigo-400"
+              className="px-input h-12 w-full px-3 text-base"
             >
               <option value="">분류 없음</option>
               {rooms.map((r) => (
@@ -256,7 +256,7 @@ function CharacterForm({
                     type="button"
                     onClick={() => setCoverKey(d.key)}
                     aria-label="대표 이미지로"
-                    className={`absolute top-1 left-1 flex size-7 items-center justify-center rounded-full ${
+                    className={`absolute top-1 left-1 flex size-7 items-center justify-center ${
                       isCover ? 'bg-(--wiki) text-white' : 'bg-black/40 text-white'
                     }`}
                   >
@@ -266,7 +266,7 @@ function CharacterForm({
                     type="button"
                     onClick={() => removeImage(d.key)}
                     aria-label="이미지 빼기"
-                    className="absolute top-1 right-1 flex size-7 items-center justify-center rounded-full bg-black/40 text-white"
+                    className="absolute top-1 right-1 flex size-7 items-center justify-center bg-black/40 text-white"
                   >
                     <CloseIcon className="size-4" />
                   </button>
@@ -318,7 +318,7 @@ function CharacterForm({
                     maxLength={50}
                     onChange={(e) => updateField(f.key, { label: e.target.value })}
                     placeholder="항목 이름 (예: 외모)"
-                    className="h-10 min-w-0 flex-1 rounded-lg border border-gray-200 bg-white px-3 font-semibold outline-none focus:border-indigo-400"
+                    className="px-input h-10 min-w-0 flex-1 px-3 font-bold"
                   />
                   <IconButton label="위로" className="size-9" disabled={i === 0} onClick={() => moveField(i, -1)}>
                     <UpIcon className="size-5" />
@@ -359,7 +359,7 @@ function CharacterForm({
                 key={s}
                 type="button"
                 onClick={() => addField(s)}
-                className="rounded-full bg-gray-100 px-3 py-1.5 text-sm text-gray-600 active:bg-gray-200"
+                className="border-2 border-ink bg-paper px-2.5 py-1 text-sm text-ink active:bg-gray-100"
               >
                 + {s}
               </button>
@@ -389,7 +389,7 @@ function CharacterForm({
         )}
 
         {/* 저장 버튼 (화면 아래 고정) */}
-        <div className="fixed inset-x-0 bottom-0 z-20 border-t border-gray-100 bg-white/95 px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur">
+        <div className="fixed inset-x-0 bottom-0 z-20 border-t-3 border-ink bg-paper px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
           <div className="mx-auto max-w-md">
             <Button type="submit" variant="theme" loading={saving}>
               {saving ? progress : isNew ? '캐릭터 만들기' : '저장'}

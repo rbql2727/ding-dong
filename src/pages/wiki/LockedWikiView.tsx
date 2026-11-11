@@ -36,24 +36,24 @@ export function LockedWikiView({ preview, onChanged }: { preview: WikiPreview; o
   return (
     <div style={themeStyle(preview.theme_color)} className="pb-16">
       <section className="relative">
-        <div className="relative h-44 bg-(--wiki)">
+        <div className="relative h-44 border-b-3 border-ink bg-(--wiki)">
           {preview.cover_url && <MediaImg src={preview.cover_url} alt="" decoding="async" className="size-full object-cover" />}
           <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/10" />
         </div>
         <div className="absolute inset-x-0 top-0 px-2 pt-[calc(0.5rem+env(safe-area-inset-top))]">
-          <IconButton label="뒤로 가기" onClick={() => navigate(-1)} className="text-white active:bg-white/20">
+          <IconButton label="뒤로 가기" onClick={() => navigate(-1)} className="px-winbtn size-9 min-w-9">
             <BackIcon />
           </IconButton>
         </div>
       </section>
 
       <div className="px-4 pt-4">
-        <h1 className="text-2xl font-bold break-words text-gray-900">{preview.name}</h1>
+        <h1 className="font-title text-2xl break-words text-gray-900">{preview.name}</h1>
         <p className="mt-1 text-sm text-gray-500">{preview.owner_nickname}</p>
       </div>
 
-      <div className="mx-4 mt-8 rounded-2xl bg-gray-50 px-5 py-8 text-center">
-        <div className="mx-auto mb-3 flex size-14 items-center justify-center rounded-full bg-white text-2xl shadow-sm" aria-hidden>
+      <div className="px-window mx-4 mt-8 px-5 py-8 text-center">
+        <div className="mx-auto mb-3 flex size-14 items-center justify-center border-3 border-ink bg-paper text-2xl shadow-sm" aria-hidden>
           🔒
         </div>
         <p className="font-semibold text-gray-900">승인한 사람만 볼 수 있는 위키예요</p>
@@ -70,7 +70,7 @@ export function LockedWikiView({ preview, onChanged }: { preview: WikiPreview; o
         {status === 'pending' && (
           <>
             <p className="mt-1 text-sm text-gray-500">열람 요청을 보냈어요. 주인이 승인하면 볼 수 있어요.</p>
-            <p className="mt-4 inline-block rounded-full bg-white px-3 py-1 text-sm font-medium text-(--wiki)">승인 대기 중</p>
+            <p className="mt-4 inline-block bg-ink px-3 py-1 text-sm text-paper">승인 대기 중</p>
             <Button variant="secondary" className="mt-4" loading={busy} onClick={() => run(() => cancelAccessRequest(preview.id, user!.id))}>
               요청 취소
             </Button>

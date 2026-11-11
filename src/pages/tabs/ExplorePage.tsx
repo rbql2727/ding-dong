@@ -42,14 +42,14 @@ export function ExplorePage() {
   return (
     <>
       <PageHeader title="탐색" />
-      <div className="sticky top-[calc(3.5rem+env(safe-area-inset-top))] z-[5] bg-white px-4 pt-3 pb-2">
+      <div className="sticky top-[calc(3.5rem+env(safe-area-inset-top))] z-[5] bg-paper px-4 pt-3 pb-2">
         <input
           type="search"
           value={input}
           onChange={(e) => handleInput(e.target.value)}
           placeholder="위키 이름으로 검색"
           aria-label="위키 검색"
-          className="h-11 w-full rounded-full border border-gray-200 bg-gray-50 px-4 text-base outline-none focus:border-indigo-400 focus:bg-white"
+          className="px-input h-11 w-full px-4 text-base"
         />
       </div>
 
@@ -95,9 +95,9 @@ function ExploreCard({ wiki }: { wiki: ExploreWiki }) {
     <Link
       to={`/w/${wiki.id}`}
       style={themeStyle(wiki.theme_color)}
-      className="flex gap-3 overflow-hidden rounded-2xl border border-gray-100 bg-white p-3 shadow-sm active:scale-[0.99]"
+      className="px-window flex gap-3 overflow-hidden p-3 active:translate-x-0.5 active:translate-y-0.5"
     >
-      <div className="size-20 shrink-0 overflow-hidden rounded-xl bg-(--wiki)">
+      <div className="size-20 shrink-0 overflow-hidden border-2 border-ink bg-(--wiki)">
         {wiki.cover_url && <MediaImg src={wiki.cover_url} alt="" loading="lazy" decoding="async" className="size-full object-cover" />}
       </div>
       <div className="min-w-0 flex-1 py-0.5">
@@ -107,7 +107,7 @@ function ExploreCard({ wiki }: { wiki: ExploreWiki }) {
         </div>
         <p className="text-xs text-gray-500">{wiki.owner_nickname}</p>
         {locked ? (
-          <p className="mt-1.5 inline-block rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">{statusText}</p>
+          <p className="mt-1.5 inline-block bg-ink px-2 py-0.5 text-xs text-paper">{statusText}</p>
         ) : (
           <>
             {wiki.description && <p className="mt-1 line-clamp-2 text-sm text-gray-600">{wiki.description}</p>}

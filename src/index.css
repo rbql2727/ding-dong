@@ -1,12 +1,322 @@
 @import "tailwindcss";
+/* 로그 글꼴: 프리텐다드(필요한 글자만 내려받는 방식), 노토산스 */
+@import "pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css";
+@import "@fontsource/noto-sans-kr/400.css";
+@import "@fontsource/noto-sans-kr/700.css";
 
-/* 앱 전체 기본값: 폰 우선 */
+/* =====================================================================
+   레트로 픽셀 디자인
+   - 글꼴: 갈무리(픽셀, 앱 화면 기본) — 라이선스: src/assets/fonts/GALMURI-LICENSE.md (SIL OFL)
+   - 색: 밤하늘 남색 + 크림색 창 + 주황 포인트
+   - 기존 Tailwind 색 이름(gray/indigo/white)을 레트로 색으로 바꿔서 모든 화면에 한 번에 적용
+   ===================================================================== */
+
+@font-face {
+  font-family: 'Galmuri11';
+  src: url('./assets/fonts/Galmuri11.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Galmuri11';
+  src: url('./assets/fonts/Galmuri11-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Galmuri14';
+  src: url('./assets/fonts/Galmuri14.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+}
+
+@theme {
+  --font-sans: 'Galmuri11', 'Pretendard Variable', 'Noto Sans KR', sans-serif;
+  --font-title: 'Galmuri14', 'Galmuri11', sans-serif;
+  --font-mono: 'Galmuri11', ui-monospace, monospace;
+
+  /* 레트로 기본 색 */
+  --color-ink: #1f2542; /* 남색 글자·테두리 */
+  --color-night: #171c36; /* 배경 밤하늘 */
+  --color-paper: #fbf3e1; /* 크림색 창 */
+  --color-accent: #e66b2c; /* 주황 포인트 */
+  --color-dim: #8e93a8; /* 흐린 글자 */
+
+  /* 기존 색 이름 → 레트로 색 */
+  --color-white: #fbf3e1;
+  --color-black: #171c36;
+  --color-gray-50: #f4ead3;
+  --color-gray-100: #ece0c6;
+  --color-gray-200: #d9cdb0;
+  --color-gray-300: #b8b2a2;
+  --color-gray-400: #8e93a8;
+  --color-gray-500: #6c7290;
+  --color-gray-600: #4f5674;
+  --color-gray-700: #393f60;
+  --color-gray-800: #2a3052;
+  --color-gray-900: #1f2542;
+  --color-indigo-50: #fdebdd;
+  --color-indigo-100: #fbd5bb;
+  --color-indigo-200: #f6b48c;
+  --color-indigo-300: #f0925d;
+  --color-indigo-400: #eb7c41;
+  --color-indigo-500: #e66b2c;
+  --color-indigo-600: #c95a20;
+  --color-indigo-700: #a5481a;
+  --color-violet-500: #c95a20;
+
+  /* 픽셀이라 둥근 모서리 없음 (rounded-full 은 그대로) */
+  --radius-xs: 0px;
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+  --radius-xl: 0px;
+  --radius-2xl: 0px;
+  --radius-3xl: 0px;
+
+  /* 그림자 = 픽셀처럼 비스듬히 겹친 단색 */
+  --shadow-sm: 3px 3px 0 0 #1f2542;
+  --shadow-md: 4px 4px 0 0 #1f2542;
+  --shadow-lg: 5px 5px 0 0 #1f2542;
+  --shadow-xl: 6px 6px 0 0 #1f2542;
+}
+
 html,
 body,
 #root {
   min-height: 100%;
 }
 
+/* 밤하늘: 촘촘한 체크무늬(디더) + 흰 별 + 주황 별 */
 body {
   -webkit-tap-highlight-color: transparent;
+  color: var(--color-ink);
+  background-color: var(--color-night);
+  background-image:
+    radial-gradient(circle, #fbf3e1 1px, transparent 1.6px),
+    radial-gradient(circle, #e66b2c 1px, transparent 1.6px),
+    radial-gradient(circle, #fbf3e1 0.8px, transparent 1.3px),
+    repeating-conic-gradient(#1c2240 0 25%, #171c36 0 50%);
+  background-size: 137px 151px, 211px 173px, 89px 97px, 4px 4px;
+  background-position: 13px 29px, 71px 5px, 40px 60px, 0 0;
+  background-attachment: fixed;
+}
+
+/* ---------------- 앱 틀 (창) ---------------- */
+.app-frame {
+  background: var(--color-paper);
+  min-height: 100dvh;
+}
+@media (min-width: 480px) {
+  .app-frame {
+    border-left: 3px solid var(--color-ink);
+    border-right: 3px solid var(--color-ink);
+    box-shadow: 8px 0 0 0 rgba(8, 10, 26, 0.45);
+  }
+}
+
+/* ---------------- 창 (카드) ---------------- */
+.px-window {
+  background: var(--color-paper);
+  border: 3px solid var(--color-ink);
+  box-shadow: 4px 4px 0 0 var(--color-ink);
+}
+
+/* ---------------- 제목 줄 (남색 + 오른쪽 주황 디더) ---------------- */
+.px-titlebar {
+  position: relative;
+  background: var(--color-ink);
+  color: var(--color-paper);
+  overflow: hidden;
+}
+.px-titlebar::after {
+  content: '';
+  position: absolute;
+  inset: 0 0 0 38%;
+  background-image: repeating-conic-gradient(var(--color-accent) 0 25%, transparent 0 50%);
+  background-size: 4px 4px;
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 90%);
+  mask-image: linear-gradient(to right, transparent, #000 90%);
+  pointer-events: none;
+}
+.px-titlebar > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* 제목 줄의 작은 창 버튼 (_ □ ×) */
+.px-winbtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2rem;
+  height: 2rem;
+  background: var(--color-paper);
+  color: var(--color-ink);
+  border: 2px solid var(--color-ink);
+  box-shadow: inset -2px -2px 0 0 #cfc4a8, inset 2px 2px 0 0 #ffffff;
+}
+.px-winbtn:active {
+  box-shadow: inset 2px 2px 0 0 #cfc4a8;
+}
+.px-winbtn:disabled {
+  opacity: 0.4;
+}
+
+/* ---------------- 버튼 ---------------- */
+.px-btn {
+  border: 2px solid var(--color-ink);
+  box-shadow: 3px 3px 0 0 var(--color-ink);
+  transition: transform 60ms, box-shadow 60ms;
+}
+.px-btn:active:not(:disabled) {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 0 var(--color-ink);
+}
+.px-btn:disabled {
+  box-shadow: none;
+  opacity: 0.6;
+}
+
+/* ---------------- 입력칸 ---------------- */
+.px-input {
+  background: #fffaf0;
+  border: 2px solid var(--color-ink);
+  box-shadow: inset 2px 2px 0 0 #e7dcc2;
+  outline: none;
+}
+.px-input:focus {
+  border-color: var(--color-accent);
+  box-shadow: inset 2px 2px 0 0 #e7dcc2, 0 0 0 2px var(--color-accent);
+}
+.px-input::placeholder {
+  color: var(--color-dim);
+}
+
+/* ---------------- 이름표 (남색 상자 + 주황 그림자) ---------------- */
+.px-label {
+  display: inline-block;
+  background: var(--color-ink);
+  color: var(--color-paper);
+  padding: 0.3rem 0.75rem;
+  box-shadow: 4px 4px 0 0 var(--color-accent);
+  font-family: var(--font-title);
+}
+
+/* 점선 구분선 */
+.px-dashed {
+  border-top: 2px dashed var(--color-gray-300);
+}
+
+/* 픽셀 아이콘·이미지는 흐리지 않게 */
+.pixelated {
+  image-rendering: pixelated;
+}
+
+/* 제목 줄 안의 아이콘 버튼은 창 버튼 모양으로 */
+.px-titlebar .px-iconbtn {
+  min-width: 2rem;
+  width: 2rem;
+  height: 2rem;
+  background: var(--color-paper);
+  color: var(--color-ink);
+  border: 2px solid var(--color-ink);
+  box-shadow: inset -2px -2px 0 0 #cfc4a8, inset 2px 2px 0 0 #ffffff;
+}
+.px-titlebar .px-iconbtn svg {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+/* 픽셀 로딩 표시: 네모가 뚝뚝 끊기며 돎 */
+.px-spinner {
+  display: inline-block;
+  border: 3px solid currentColor;
+  border-right-color: transparent;
+  animation: px-spin 0.8s steps(4) infinite;
+}
+@keyframes px-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* =====================================================================
+   로그 본문 (편집기·보기 공통) — 기본 글꼴은 읽기 편한 프리텐다드
+   ===================================================================== */
+.log-content {
+  font-family: 'Pretendard Variable', Pretendard, 'Noto Sans KR', sans-serif;
+  font-size: 1rem;
+  line-height: 1.75;
+  color: var(--color-ink);
+  word-break: break-word;
+}
+.log-content p {
+  min-height: 1.75em;
+}
+.log-content strong {
+  font-weight: 700;
+}
+.log-content a {
+  color: var(--color-accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.log-content mark {
+  background: #ffe066;
+  color: inherit;
+  padding: 0 2px;
+}
+.log-content ul,
+.log-content ol {
+  padding-left: 1.5rem;
+  margin: 0.25rem 0;
+}
+.log-content ul {
+  list-style: square;
+}
+.log-content ol {
+  list-style: decimal;
+}
+.log-content li::marker {
+  color: var(--color-accent);
+}
+.log-content blockquote {
+  margin: 0.75rem 0;
+  padding: 0.5rem 0.9rem;
+  border-left: 4px solid var(--color-accent);
+  background: var(--color-gray-50);
+}
+.log-content hr {
+  margin: 1.25rem 0;
+  border: 0;
+  border-top: 2px dashed var(--color-gray-300);
+}
+.log-content table {
+  width: 100%;
+  margin: 0.75rem 0;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+.log-content td,
+.log-content th {
+  border: 2px solid var(--color-ink);
+  padding: 0.35rem 0.5rem;
+  vertical-align: top;
+}
+.log-content th {
+  background: var(--color-gray-100);
+}
+.log-content td p,
+.log-content th p {
+  min-height: 1.5em;
+}
+.log-content .selectedCell {
+  background: var(--color-indigo-50);
+}
+.ProseMirror-focused {
+  outline: none;
+}
+.log-content .ProseMirror-selectednode {
+  outline: 3px solid var(--color-accent);
 }

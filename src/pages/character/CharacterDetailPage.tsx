@@ -64,14 +64,14 @@ export function CharacterDetailPage() {
 
       <section className="px-4 pt-5">
         {room && (
-          <span className="mb-2 inline-block rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-600">{room.name}</span>
+          <span className="mb-2 inline-block bg-ink px-2.5 py-1 text-xs text-paper">{room.name}</span>
         )}
-        <h1 className="text-2xl font-bold break-words text-gray-900">{character.name}</h1>
+        <h1 className="font-title text-2xl break-words text-gray-900">{character.name}</h1>
         {character.tagline && <p className="mt-1 text-gray-600">{character.tagline}</p>}
       </section>
 
       {/* 탭 */}
-      <div role="tablist" className="sticky top-[calc(3.5rem+env(safe-area-inset-top))] z-[5] mt-5 flex border-b border-gray-100 bg-white">
+      <div role="tablist" className="sticky top-[calc(3.5rem+env(safe-area-inset-top))] z-[5] mt-5 flex gap-1 border-b-3 border-ink bg-paper px-4 pt-2">
         {(
           [
             ['profile', '프로필'],
@@ -84,8 +84,8 @@ export function CharacterDetailPage() {
             role="tab"
             aria-selected={tab === key}
             onClick={() => setSearchParams(key === 'profile' ? {} : { tab: key }, { replace: true })}
-            className={`flex-1 border-b-2 py-3 text-sm font-semibold transition-colors ${
-              tab === key ? 'border-(--wiki) text-gray-900' : 'border-transparent text-gray-400'
+            className={`-mb-[3px] flex-1 border-3 border-b-0 py-2.5 text-sm font-bold ${
+              tab === key ? 'border-ink bg-ink text-paper' : 'border-gray-300 bg-gray-100 text-gray-500'
             }`}
           >
             {label}
@@ -198,7 +198,7 @@ function LogsTab({ wikiId, charId, isOwner }: { wikiId: string; charId: string; 
       {isOwner && (
         <Link
           to={`${base}/new`}
-          className="mb-4 flex h-11 items-center justify-center gap-1 rounded-xl bg-(--wiki) text-sm font-semibold text-white active:brightness-95"
+          className="px-btn mb-4 flex h-11 items-center justify-center gap-1 bg-(--wiki) text-sm font-bold text-paper"
         >
           <PlusIcon className="size-5" />
           로그 쓰기
